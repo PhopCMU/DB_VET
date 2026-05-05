@@ -1,0 +1,121 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useRef,
+} from "react";
+import { verifyToken } from "@/app/routers/authServer";
+import { UserInfoGet } from "@/app/model/authModel";
+import { useRouter } from "next/navigation";
+import { SUPER_ADMIN_IDS } from "../lib/constants";
+
+type UserContextType = {
+  userData: UserInfoGet | null | any;
+  loading: boolean;
+  refreshUserData: () => Promise<void>;
+  clearUserData: () => void;
+  logout: () => void;
+  isSuperAdmin: boolean;
+};
+
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error("useUser must be used within a UserProvider");
+  }
+  return context;
+};
+
+export default function UserProvider({ children }: { children: ReactNode }) {
+  const [userData, setUserData] = useState<UserInfoGet | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [superAdminIds, setSuperAdminIds] = useState<string[]>([]);
+  const hasCheckedAuth = useRef(false);
+  const router = useRouter();
+
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem("authToken");
+
+      if (token) {
+        const response = await verifyToken(token);
+        if (response && response.data) {
+          setUserData(response.data as UserInfoGet);
+        } else {
+          if (
+            response &&
+            response.status === 401 &&
+            response.statusText === "Unauthorized"
+          ) {
+            router.replace("/");
+          }
+          localStorage.removeItem("authToken");
+          setUserData(null);
+        }
+      } else {
+        setUserData(null);
+      }
+    } catch (error) {
+      console.error("Failed to verify token:", error);
+      localStorage.removeItem("authToken");
+      setUserData(null);
+      router.push("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshUserData = async () => {
+    setLoading(true);
+    await fetchUserData();
+  };
+
+  const clearUserData = () => {
+    localStorage.removeItem("authToken");
+    setUserData(null);
+  };
+
+  const logout = () => {
+    localStorage.clear();
+    router.push("/"); // เปลี่ยนเส้นทางไปหน้า login
+  };
+
+  // โหลด super admin IDs จาก API
+  useEffect(() => {
+    const loadSuperAdminIds = async () => {
+      const response: any = await SUPER_ADMIN_IDS();
+      setSuperAdminIds(response);
+    };
+    loadSuperAdminIds();
+  }, []);
+
+  useEffect(() => {
+    if (hasCheckedAuth.current) return;
+
+    fetchUserData();
+    hasCheckedAuth.current = true;
+  }, []);
+
+  return (
+    <UserContext.Provider
+      value={{
+        userData,
+        loading,
+        isSuperAdmin: userData
+          ? superAdminIds.includes(userData.userId)
+          : false,
+        refreshUserData,
+        clearUserData,
+        logout,
+      }}
+    >
+      {children}
+    </UserContext.Provider>
+  );
+}
