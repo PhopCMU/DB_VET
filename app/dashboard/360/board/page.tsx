@@ -30,11 +30,17 @@ export default function Page() {
   // DatePicker
   const [selectedYear, setSelectedYear] = useState<Date>(new Date());
 
+  function safeImageUrl(base: string, path: unknown): string | undefined {
+    if (typeof path !== "string" || !path) return undefined;
+    if (/^(data:|javascript:|\/\/)/i.test(path)) return undefined;
+    return base + path;
+  }
+
   const organizations = [
     { id: "1", name: "สำนักงานคณะ" },
     { id: "2", name: "สำนักวิชาสัตวแพทยศาสตร์" },
     { id: "3", name: "โรงพยาบาลสัตว์มหาวิทยาลัยเชียงใหม่" },
-    { id: "4", name: "ศูนย์สัตวแพทย์สาธารณสุขและอาหารปลอดภัย" },
+    // { id: "4", name: "ศูนย์สัตวแพทย์สาธารณสุขและอาหารปลอดภัย" },
     { id: "5", name: "กลุ่มภารกิจยุทธศาสตร์เชิงรุก (บริหารรูปแบบ Sanbox)" },
   ];
 
@@ -45,8 +51,8 @@ export default function Page() {
       case "2":
         return Tabsfaculty;
       case "3":
-        return TabsHIS;
-      case "4":
+        //   return TabsHIS;
+        // case "4":
         return TabsVphcap;
       case "5":
         return TabsSanbox;
@@ -68,7 +74,10 @@ export default function Page() {
 
       setIsLoading(true); // เริ่มโหลด
 
-      const response = await RolefetchDataListUser(orgToFetch.name);
+      const response = await RolefetchDataListUser(
+        selectedYear.getFullYear(),
+        orgToFetch.name,
+      );
 
       setIsLoading(false); // โหลดเสร็จ
 
@@ -88,7 +97,10 @@ export default function Page() {
   const handleCardClick = async (org: any) => {
     setSelectedOrg(org);
     setIsLoading(true);
-    const response = await RolefetchDataListUser(org.name);
+    const response = await RolefetchDataListUser(
+      selectedYear.getFullYear(),
+      org.name,
+    );
     setIsLoading(false);
     if (response.success) {
       localStorage.setItem("typeTab", org.name);
@@ -841,31 +853,32 @@ export default function Page() {
         </motion.div>
 
         {/* Organization Cards */}
-        <div className="flex flex-nowrap overflow-x-auto pb-4 gap-4 scrollbar-hide">
+        <div className="flex flex-nowrap overflow-x-auto pb-4 gap-3 scrollbar-hide">
           {organizations.map((org: any) => (
             <motion.div
               key={org.id}
-              className={`flex-shrink-0 w-64 p-5 rounded-xl cursor-pointer  ${
+              className={`flex-shrink-0 w-80 px-5 py-4 rounded-xl cursor-pointer transition-all duration-200 ${
                 selectedOrg?.id === org.id
-                  ? "bg-gradient-to-br from-[#92d4ff] to-[#c5d1ff] text-gray-800 shadow-lg"
-                  : "bg-white hover:bg-gray-50 text-gray-800 border border-gray-100 shadow-sm"
+                  ? "bg-blue-600 text-white shadow-xl ring-2 ring-blue-300 ring-offset-2"
+                  : "bg-white text-gray-800 border border-gray-200 shadow-md hover:shadow-lg hover:border-blue-300"
               }`}
               whileHover={{
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                y: -2,
               }}
               whileTap={{ scale: 0.98 }}
               onClick={() => handleCardClick(org)}
             >
-              <div className="flex items-start gap-3">
+              {/* Icon and Title */}
+              <div className="flex items-center gap-3 mb-3">
                 <div
-                  className={`p-2 rounded-lg ${
-                    selectedOrg?.id === org.id ? "bg-white/30" : "bg-blue-50"
+                  className={`p-3 rounded-lg flex-shrink-0 ${
+                    selectedOrg?.id === org.id ? "bg-white/20" : "bg-blue-50"
                   }`}
                 >
                   <span
-                    className={`material-symbols-rounded ${
+                    className={`material-symbols-rounded text-2xl ${
                       selectedOrg?.id === org.id
-                        ? "text-gray-800"
+                        ? "text-white"
                         : "text-blue-600"
                     }`}
                   >
@@ -873,40 +886,39 @@ export default function Page() {
                   </span>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-semibold line-clamp-1">
-                    {org.name}
-                  </h3>
-                  <div className="flex items-center mt-2 gap-1">
-                    <span
-                      className={`text-xs ${
-                        selectedOrg?.id === org.id
-                          ? "text-gray-700"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      <span className="material-symbols-rounded text-sm mr-1">
-                        {selectedOrg?.id === org.id ? "visibility" : "info"}
-                      </span>
-                      {selectedOrg?.id === org.id
-                        ? "กำลังแสดงข้อมูล..."
-                        : "คลิกเพื่อดูรายละเอียด"}
-                    </span>
-                  </div>
-                </div>
+                <h3
+                  className={`text-base font-semibold line-clamp-2 flex-1 leading-tight ${
+                    selectedOrg?.id === org.id ? "text-white" : "text-gray-800"
+                  }`}
+                >
+                  {org.name}
+                </h3>
               </div>
 
-              {selectedOrg?.id === org.id && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-3 flex justify-end"
-                >
-                  <span className="material-symbols-rounded animate-pulse text-gray-700">
-                    arrow_forward
-                  </span>
-                </motion.div>
-              )}
+              {/* Status Indicator */}
+              <div
+                className={`flex items-center gap-2 text-sm ${
+                  selectedOrg?.id === org.id ? "text-blue-100" : "text-gray-600"
+                }`}
+              >
+                {selectedOrg?.id === org.id ? (
+                  <>
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/30">
+                      <span className="material-symbols-rounded text-base text-white">
+                        check
+                      </span>
+                    </span>
+                    <span className="font-medium">กำลังแสดงข้อมูล</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-rounded text-base">
+                      touch_app
+                    </span>
+                    <span>คลิกเพื่อเลือก</span>
+                  </>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
@@ -1067,158 +1079,153 @@ export default function Page() {
                   <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
                 </motion.div>
               ) : (
-                <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th
-                          scope="col"
-                          className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-700"
+                <div className="space-y-3">
+                  {/* Header Summary */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isAllChecked}
+                        onChange={handleSelectAll}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition"
+                      />
+                      <span className="text-sm font-semibold text-gray-700">
+                        เลือกทั้งหมด ({filteredUsers?.length || 0} คน)
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-blue-600">
+                        {
+                          Array.from(checkedRows).filter((r: any) =>
+                            filteredUsers?.some(
+                              (u: any) => u.accountId === r.accountId,
+                            ),
+                          ).length
+                        }
+                      </span>
+                      <span className="text-gray-500">
+                        {" "}
+                        / {filteredUsers?.length || 0} เลือก
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* User List Cards */}
+                  <div className="divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden bg-white">
+                    {filteredUsers?.map((user: any, index: number) => {
+                      const isChecked = Array.from(checkedRows).some(
+                        (row: any) => row.accountId === user.accountId,
+                      );
+                      const hasEvaluation = user.evaluation_B?.length > 0;
+
+                      return (
+                        <motion.div
+                          key={user.accountId}
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className={`py-4 px-4 transition-all duration-200 ${
+                            isChecked
+                              ? "bg-blue-50 border-l-4 border-l-blue-500"
+                              : "hover:bg-gray-50/50"
+                          }`}
                         >
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="checkbox"
-                              checked={isAllChecked}
-                              onChange={handleSelectAll}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition"
-                            />
-                            <span>ผู้เข้าร่วม</span>
-                          </div>
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-3 py-3.5 text-left text-sm font-semibold text-gray-700"
-                        >
-                          <div className="flex items-center">
-                            <span className="material-symbols-rounded text-base mr-1">
-                              apartment
-                            </span>
-                            สังกัด
-                          </div>
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-3 py-3.5 text-left text-sm font-semibold text-gray-700"
-                        >
-                          <div className="flex items-center">
-                            <span className="material-symbols-rounded text-base mr-1">
-                              assessment
-                            </span>
-                            สถานะการประเมิน
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                      {filteredUsers?.map((user: any, index: number) => {
-                        const isChecked = Array.from(checkedRows).some(
-                          (row: any) => row.accountId === user.accountId,
-                        );
-                        return (
-                          <motion.tr
-                            key={user.accountId}
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className={
-                              isChecked
-                                ? "bg-blue-50/50 hover:bg-blue-50"
-                                : "hover:bg-gray-50"
-                            }
-                          >
-                            {/* User Info */}
-                            <td className="whitespace-nowrap py-4 pl-4 pr-3">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex items-center h-5">
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleRow(user.accountId)}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition"
-                                  />
-                                </div>
-                                <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium text-sm">
-                                  <div className="relative">
-                                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center overflow-hidden shadow-lg group-hover:shadow-xl transition-all duration-200 group-hover:scale-105">
-                                      {user.imageprofile ? (
-                                        <img
-                                          className="h-full w-full object-contain"
-                                          src={
-                                            (config.URL_API +
-                                              user.imageprofile) as string
-                                          }
-                                          alt={`${user.fullname_th}'s profile`}
-                                        />
-                                      ) : (
-                                        <UserIcon className="h-7 w-7 text-white" />
+                          <div className="flex items-start gap-4">
+                            {/* Checkbox */}
+                            <div className="flex items-center pt-1">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleRow(user.accountId)}
+                                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition cursor-pointer"
+                              />
+                            </div>
+
+                            {/* User Profile */}
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="flex-shrink-0">
+                                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center overflow-hidden shadow-sm border border-blue-200">
+                                  {user.imageprofile ? (
+                                    <img
+                                      className="h-full w-full object-contain"
+                                      src={safeImageUrl(
+                                        config.URL_API,
+                                        user.imageprofile,
                                       )}
-                                    </div>
-                                  </div>
+                                      alt={`${user.fullname_th}'s profile`}
+                                    />
+                                  ) : (
+                                    <UserIcon className="h-6 w-6 text-white" />
+                                  )}
                                 </div>
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="text-sm font-semibold text-gray-900 truncate">
                                     {user.fullname_th}
-                                    {user.evaluation_B?.length > 0 && (
-                                      <span
-                                        className="material-symbols-rounded text-green-500 text-base"
-                                        title="เคยประเมินแล้ว"
-                                      >
-                                        check_circle
+                                  </h3>
+                                  {hasEvaluation && (
+                                    <span
+                                      className="flex-shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100"
+                                      title="เคยประเมินแล้ว"
+                                    >
+                                      <span className="material-symbols-rounded text-sm text-green-600">
+                                        check
                                       </span>
-                                    )}
-                                  </div>
-                                  <div className="text-xs text-gray-500 flex items-center mt-1">
-                                    <span className="material-symbols-rounded text-xs mr-1">
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-gray-500">
+                                    <span className="material-symbols-rounded text-xs mr-0.5 align-text-bottom">
                                       badge
                                     </span>
                                     ID: {user.accountId}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-700">
-                              <div className="flex items-center">
-                                <span className="material-symbols-rounded text-gray-400 text-base mr-1">
-                                  location_on
-                                </span>
-                                {user.level3agency_th}
-                              </div>
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-700">
-                              {user.evaluation_B.length > 0 ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {user.evaluation_B.length} ครั้ง
                                   </span>
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => {
-                                      setSelectedUser(user);
-                                      setIsOpenModal(true);
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800 text-xs flex items-center"
-                                  >
-                                    <span className="material-symbols-rounded text-sm mr-1">
-                                      visibility
-                                    </span>
-                                    ดูผลการประเมิน
-                                  </motion.button>
                                 </div>
-                              ) : (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="material-symbols-rounded text-sm text-gray-400">
+                                    location_on
+                                  </span>
+                                  <span className="text-xs text-gray-600 truncate">
+                                    {user.level3agency_th}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status Badge */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {hasEvaluation ? (
+                                <motion.button
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsOpenModal(true);
+                                  }}
+                                  className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition-colors whitespace-nowrap"
+                                >
                                   <span className="material-symbols-rounded text-sm mr-1">
-                                    pending
+                                    visibility
                                   </span>
-                                  ยังไม่มีการประเมิน
+                                  {user.evaluation_B.length} ครั้ง
+                                </motion.button>
+                              ) : (
+                                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 whitespace-nowrap">
+                                  <span className="material-symbols-rounded text-sm mr-1">
+                                    schedule
+                                  </span>
+                                  รอการประเมิน
                                 </span>
                               )}
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

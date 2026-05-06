@@ -575,9 +575,10 @@ export default function UserManagementPage() {
                       <th className="px-4 py-4 text-left">หน่วยงาน</th>
                       <th className="px-4 py-4 text-left">ตำแหน่ง</th>
                       <th className="px-4 py-4 text-left">ประเภท</th>
-                      <th className="px-4 py-4 text-center">เลขอัตรา</th>
-                      <th className="px-4 py-4 text-center">สถานะ</th>
-                      <th className="px-4 py-4 text-left">อัปเดต</th>
+                      <th className="px-4 py-4 text-center">
+                        เลขอัตรา/สถานะ/อัปเดต
+                      </th>
+
                       <th className="px-4 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -661,9 +662,9 @@ export default function UserManagementPage() {
                             </td>
 
                             {/* Position */}
-                            <td className="px-4 py-3 min-w-[140px]">
+                            <td className="px-4 py-3 min-w-[180px]">
                               {user.positiontitle_th ? (
-                                <span className="text-sm text-gray-700 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
+                                <span className="text-xs text-gray-700 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">
                                   {user.positiontitle_th}
                                 </span>
                               ) : (
@@ -680,11 +681,33 @@ export default function UserManagementPage() {
 
                             {/* Rate No. */}
                             <td className="px-4 py-3 text-center text-sm text-gray-600">
-                              {user.ratenumber || "-"}
+                              {user.workingstatus ? (
+                                <span className="inline-flex items-center gap-1  text-green-700 text-xs font-medium ">
+                                  <CheckCircle
+                                    className="w-2 h-2"
+                                    aria-hidden="true"
+                                  />
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1   text-red-600 text-xs font-medium ">
+                                  <XCircle
+                                    className="w-2 h-2"
+                                    aria-hidden="true"
+                                  />
+                                  Inactive
+                                </span>
+                              )}
+                              <div className="text-xs text-gray-400">
+                                {user.ratenumber || "-"}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {formatDate(user.updatedAt)}
+                              </div>
                             </td>
 
                             {/* Status badge */}
-                            <td className="px-4 py-3 text-center">
+                            {/* <td className="px-4 py-3 text-center">
                               {user.workingstatus ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full border border-green-100">
                                   <CheckCircle
@@ -702,12 +725,12 @@ export default function UserManagementPage() {
                                   Inactive
                                 </span>
                               )}
-                            </td>
+                            </td> */}
 
                             {/* Updated */}
-                            <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
+                            {/* <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
                               {formatDate(user.updatedAt)}
-                            </td>
+                            </td> */}
 
                             {/* Actions */}
                             <td className="px-4 py-3 text-right">

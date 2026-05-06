@@ -20,15 +20,18 @@ export const decryptPayload = (encryptedData: string): any => {
 };
 
 export const RolefetchDataListUser = async (
-  agency: any,
+  year?: number,
+  agency?: string,
 ): Promise<ApiResponse> => {
   try {
-    if (!agency) {
-      throw new Error("Missing agency data");
+    if (!agency && !year) {
+      throw new Error("Missing agency or year data");
     }
 
+    const payload = { year, agency };
+
     const encryptedData = CryptoJS.AES.encrypt(
-      JSON.stringify(agency),
+      JSON.stringify(payload),
       secretKey,
     ).toString();
 
