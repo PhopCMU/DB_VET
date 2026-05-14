@@ -322,7 +322,7 @@ function getThaiBuddhistDate(d: Date = new Date()): string {
  * Layout matches /docs/Ex_.jpg — two-column header, items table,
  * summary, footer, and e-signature block.
  *
- * E-sign image must be placed at:  public/docs/e-sigin.png
+ * E-sign image must be placed at:  public/docs/e-sign.png
  */
 export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   // ── Page setup (A6 = 105×148mm) ─────────────────────────────────────────
@@ -330,52 +330,48 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   const pageW = 105;
   const margin = 8;
 
-  // ── Thai font (NotoSansThai from /public/fonts/) ─────────────────────────
-  const FONT_NAME = "NotoSansThai";
+  // ── Thai font (THSarabunNew from /public/fonts/SarabunNew/) ────────────
+  const FONT_NAME = "THSarabunNew";
   let usedFont = "helvetica";
   try {
     const [regular, bold] = await Promise.all([
-      loadFontAsBase64(
-        "/fonts/NotoSansThai/NotoSansThai_SemiCondensed-Regular.ttf",
-      ),
-      loadFontAsBase64(
-        "/fonts/NotoSansThai/NotoSansThai_SemiCondensed-Bold.ttf",
-      ),
+      loadFontAsBase64("/fonts/SarabunNew/THSarabunNew.ttf"),
+      loadFontAsBase64("/fonts/SarabunNew/THSarabunNew Bold.ttf"),
     ]);
     if (regular) {
-      doc.addFileToVFS("NotoSansThai-Regular.ttf", regular);
-      doc.addFont("NotoSansThai-Regular.ttf", FONT_NAME, "normal");
+      doc.addFileToVFS("THSarabunNew.ttf", regular);
+      doc.addFont("THSarabunNew.ttf", FONT_NAME, "normal");
     }
     if (bold) {
-      doc.addFileToVFS("NotoSansThai-Bold.ttf", bold);
-      doc.addFont("NotoSansThai-Bold.ttf", FONT_NAME, "bold");
+      doc.addFileToVFS("THSarabunNew-Bold.ttf", bold);
+      doc.addFont("THSarabunNew-Bold.ttf", FONT_NAME, "bold");
     }
     if (regular && bold) usedFont = FONT_NAME;
   } catch {
     /* fallback to helvetica */
   }
 
-  // ── E-sign image (public/docs/e-sigin.png) ───────────────────────────────
+  // ── E-sign image (public/docs/e-sign.png) ───────────────────────────────
   let eSignDataUrl: string | null = null;
   try {
-    const b64 = await loadFontAsBase64("/docs/e-sigin.png");
+    const b64 = await loadFontAsBase64("/docs/e-sign.png");
     if (b64) eSignDataUrl = `data:image/png;base64,${b64}`;
   } catch {
     /* no e-sign — leave blank */
   }
 
   // ── Colours ──────────────────────────────────────────────────────────────
-  const navy:    [number, number, number] = [26,  60,  124];
-  const black:   [number, number, number] = [0,   0,   0  ];
-  const gray:    [number, number, number] = [85,  85,  85 ];
+  const navy: [number, number, number] = [26, 60, 124];
+  const black: [number, number, number] = [0, 0, 0];
+  const gray: [number, number, number] = [85, 85, 85];
   const lightBg: [number, number, number] = [245, 245, 245];
 
   // ── Layout constants (A6, scaled ≈ 70% of A5) ───────────────────────────
-  const col1X = margin;           // 8 mm  — left edge
-  const col2X = pageW - margin;   // 97 mm — right edge
-  const midX  = pageW / 2;        // 52.5 mm
-  const colW  = 42;               // max column width for 2-col wrapping
-  const lineH = 2.8;              // detail-text line pitch
+  const col1X = margin; // 8 mm  — left edge
+  const col2X = pageW - margin; // 97 mm — right edge
+  const midX = pageW / 2; // 52.5 mm
+  const colW = 42; // max column width for 2-col wrapping
+  const lineH = 2.8; // detail-text line pitch
   let y = margin;
 
   const setF = (style: "normal" | "bold", size: number) => {
@@ -393,15 +389,17 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   doc.setTextColor(...navy);
 
   // Wrap long org names to colW so left/right columns don't collide
-  const leftTitleLines  = splitR("มหาวิทยาลัยเชียงใหม่");
+  const leftTitleLines = splitR("มหาวิทยาลัยเชียงใหม่");
   const rightTitleLines = splitR("คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่");
 
-  leftTitleLines.forEach( (l, i) => { doc.text(l, col1X, y + i * lineH); });
+  leftTitleLines.forEach((l, i) => {
+    doc.text(l, col1X, y + i * lineH);
+  });
   rightTitleLines.forEach((l, i) => {
     doc.text(l, col2X, y + i * lineH, { align: "right" });
   });
 
-  let yL = y + leftTitleLines.length  * lineH;
+  let yL = y + leftTitleLines.length * lineH;
   let yR = y + rightTitleLines.length * lineH;
 
   setF("normal", 5);
@@ -423,7 +421,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   ];
 
   leftHdrLines.forEach((l) => {
-    splitR(l).forEach((ll) => { doc.text(ll, col1X, yL); yL += lineH; });
+    splitR(l).forEach((ll) => {
+      doc.text(ll, col1X, yL);
+      yL += lineH;
+    });
   });
   rightHdrLines.forEach((l) => {
     splitR(l).forEach((ll) => {
@@ -436,7 +437,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   const titleY = y + leftTitleLines.length * lineH + lineH * 3.5;
   setF("bold", 6);
   doc.setTextColor(...black);
-  doc.text("ใบกำกับภาษี/Tax Invoice", midX, titleY, { align: "center" });
+  doc.text("ใบเสร็จรับเงิน/Receipt", midX, titleY, { align: "center" });
 
   y = Math.max(yL, yR) + 2;
 
@@ -450,14 +451,19 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   doc.text(`ชื่อลูกค้า/Customer Name : ${data.customerName}`, col1X, y);
   doc.text(
     `เลขที่ใบสำคัญรับ/Document No.  ${data.docNumber ?? "draft"}`,
-    col2X, y, { align: "right" },
+    col2X,
+    y,
+    { align: "right" },
   );
   y += 3.5;
 
   const addrLines: string[] = splitR(
-    `ที่อยู่/Address : ${data.customerAddress}`, 60,
+    `ที่อยู่/Address : ${data.customerAddress}`,
+    60,
   );
-  addrLines.forEach((line, i) => { doc.text(line, col1X, y + i * 3); });
+  addrLines.forEach((line, i) => {
+    doc.text(line, col1X, y + i * 3);
+  });
 
   const dateDisplay = data.date ?? getThaiBuddhistDate();
   doc.text(`วันที่/Date  ${dateDisplay}`, col2X, sectionBTop + 3.5 + 3, {
@@ -473,9 +479,10 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   // ─────────────────────────────────────────────────────────────────────────
   // C  ITEMS TABLE
   // ─────────────────────────────────────────────────────────────────────────
-  const vatRate  = data.vatRate ?? 0;
+  const vatRate = data.vatRate ?? 0;
   const subtotal = data.totalPrice;
-  const vat   = vatRate > 0 ? parseFloat(((subtotal * vatRate) / 100).toFixed(2)) : 0;
+  const vat =
+    vatRate > 0 ? parseFloat(((subtotal * vatRate) / 100).toFixed(2)) : 0;
   const total = subtotal + vat;
   const fmtTH = (n: number) =>
     n.toLocaleString("th-TH", { minimumFractionDigits: 2 });
@@ -483,35 +490,39 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
-    head: [[
-      { content: "ใบแจ้งหนี้/INV.",    styles: { halign: "center" } },
-      { content: "ลำดับ/No.",          styles: { halign: "center" } },
-      { content: "รายการ/Description", styles: { halign: "center" } },
-      { content: "ราคารวม/Total",      styles: { halign: "right"  } },
-    ]],
-    body: [[
-      { content: "",               styles: { halign: "center" } },
-      { content: "1",              styles: { halign: "center" } },
-      { content: data.description, styles: { halign: "left"   } },
-      { content: fmtTH(subtotal),  styles: { halign: "right"  } },
-    ]],
+    head: [
+      [
+        { content: "ใบแจ้งหนี้/INV.", styles: { halign: "center" } },
+        { content: "ลำดับ/No.", styles: { halign: "center" } },
+        { content: "รายการ/Description", styles: { halign: "center" } },
+        { content: "ราคารวม/Total", styles: { halign: "right" } },
+      ],
+    ],
+    body: [
+      [
+        { content: "", styles: { halign: "center" } },
+        { content: "1", styles: { halign: "center" } },
+        { content: data.description, styles: { halign: "left" } },
+        { content: fmtTH(subtotal), styles: { halign: "right" } },
+      ],
+    ],
     styles: {
-      font:        usedFont,
-      fontSize:    5,
+      font: usedFont,
+      fontSize: 5,
       cellPadding: 1.5,
-      lineColor:   black,
-      lineWidth:   0.2,
-      textColor:   black,
+      lineColor: black,
+      lineWidth: 0.2,
+      textColor: black,
     },
     headStyles: {
       fillColor: lightBg,
       textColor: black,
       fontStyle: "bold",
-      fontSize:  5,
+      fontSize: 5,
     },
     columnStyles: {
       0: { cellWidth: 14 }, // INV   — 14mm
-      1: { cellWidth: 8  }, // No    —  8mm
+      1: { cellWidth: 8 }, // No    —  8mm
       2: { cellWidth: 49 }, // Desc  — 49mm
       3: { cellWidth: 18 }, // Total — 18mm  (sum = 89mm = pageW – 2*margin)
     },
@@ -525,9 +536,13 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   // ─────────────────────────────────────────────────────────────────────────
   type SRow = { label: string; value: string; bold: boolean };
   const summaryRows: SRow[] = [
-    { label: "มูลค่าสินค้าหรือบริการก่อนภาษีมูลค่าเพิ่ม/Exclude VAT", value: fmtTH(subtotal), bold: false },
-    { label: "ภาษีมูลค่าเพิ่ม 7%/VAT",                                 value: fmtTH(vat),     bold: false },
-    { label: "จำนวนเงินรวม/Total",                                       value: fmtTH(total),   bold: true  },
+    {
+      label: "มูลค่าสินค้าหรือบริการก่อนภาษีมูลค่าเพิ่ม/Exclude VAT",
+      value: fmtTH(subtotal),
+      bold: false,
+    },
+    { label: "ภาษีมูลค่าเพิ่ม 7%/VAT", value: fmtTH(vat), bold: false },
+    { label: "จำนวนเงินรวม/Total", value: fmtTH(total), bold: true },
   ];
 
   summaryRows.forEach(({ label, value, bold }, i) => {
@@ -578,8 +593,8 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   doc.setTextColor(...black);
 
   // Right-aligned block: 38mm wide, right edge at col2X (97mm)
-  const sigRX = col2X;          // 97 mm
-  const sigW  = 38;             // block width
+  const sigRX = col2X; // 97 mm
+  const sigW = 38; // block width
   const sigCX = sigRX - sigW / 2; // centre of block at 78 mm
 
   if (eSignDataUrl) {
@@ -602,7 +617,7 @@ export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
   doc.setTextColor(...black);
   doc.text("นางสาววริยา อ้นด้วง", sigCX, y, { align: "center" });
   y += 3;
-  doc.text("นักการเงินและบัญชี",  sigCX, y, { align: "center" });
+  doc.text("นักการเงินและบัญชี", sigCX, y, { align: "center" });
 
   // ── Save PDF ─────────────────────────────────────────────────────────────
   const safeDate = (data.date ?? new Date().toISOString().slice(0, 10))
