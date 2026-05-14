@@ -9,25 +9,21 @@ declare module "jspdf" {
 }
 
 /**
- * ReceiptData interface for generateReceiptPDF function
- * Matches CMU tax invoice template structure
+ * ReceiptData — A5 CMU tax invoice (matches /docs/Ex_.jpg reference)
  */
 export interface ReceiptData {
-  docNumber: string; // e.g. "690214101694"
-  date: string; // e.g. "12 พฤษภาคม 2569"
-  dateEN: string; // e.g. "12 MAY 2026"
-  customerName: string;
-  customerAddress: string;
-  customerTaxId: string;
-  invoiceRef: string;
-  description: string; // can be multi-line
-  subtotal: number;
-  vat: number; // 0 if VAT-exempt
-  total: number;
-  amountInWords: string; // Thai words e.g. "สี่พันบาทถ้วน"
-  amountInWordsEN: string; // English e.g. "Four thousand Baht"
-  paymentMethod: string; // e.g. "ธนาคารส่วนงาน"
-  paymentNote: string; // e.g. "เงินโอนเข้า SCB#12002-0 ลว.12/5/69"
+  // ── [DB] pulled from database ──────────────────────────────────────────────
+  customerName: string;     // ชื่อลูกค้า
+  customerAddress: string;  // ที่อยู่
+  customerTaxId: string;    // เลขประจำตัวผู้เสียภาษี
+  description: string;      // รายการ (may be multi-line)
+  totalPrice: number;       // ราคารวม
+  amountInWords: string;    // จำนวนเงิน(ตัวอักษร) Thai  e.g. "สี่พันบาทถ้วน"
+  // ── optional / auto-generated ──────────────────────────────────────────────
+  amountInWordsEN?: string; // Amount in Words (English)
+  docNumber?: string;       // receipt number (auto if omitted)
+  date?: string;            // formatted date string (auto = today Buddhist Era)
+  vatRate?: number;         // 0 = VAT-exempt (default), 7 = 7% VAT
 }
 
 export const exportEvaluation = (user: any) => {
@@ -265,275 +261,303 @@ export const exportReceipt = async (opts: {
   doc.save(filename);
 };
 
-/**
- * Generate a professional CMU tax invoice PDF receipt
- * Matches the CMU_รายงานใบเสร็จรับเงิน template structure
- *
- * @param data - ReceiptData containing receipt information
- */
-export const generateReceiptPDF = (data: ReceiptData): void => {
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
+// ─── Helpers for generateReceiptPDF ─────────────────────────────────────────
 
-  // Page setup
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
-  const contentWidth = pageWidth - 2 * margin;
-  let yPosition = margin;
+/** Load a /public font file as base64 string for jsPDF addFileToVFS */
+async function loadFontAsBase64(publicPath: string): Promise<string> {
+  try {
+    const res = await fetch(publicPath);
+    if (!res.ok) return "";
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    const chunk = 8192;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(
+        ...Array.from(bytes.subarray(i, i + chunk)),
+      );
+    }
+    return btoa(binary);
+  } catch {
+    return "";
+  }
+}
 
-  // ─── HEADER SECTION ───────────────────────────────────────────────────
-  // Organization name
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("มหาวิทยาลัยเชียงใหม่", pageWidth / 2, yPosition, {
-    align: "center",
-  });
-  yPosition += 6;
-
-  // Organization address and contact
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(
-    "239 ม.1 ต.บ้านป่า อ.ฮ่องไคร่ จ.เชียงใหม่ 50230",
-    pageWidth / 2,
-    yPosition,
-    {
-      align: "center",
-    },
-  );
-  yPosition += 4;
-  doc.text("โทรศัพท์ 0-5394-3999", pageWidth / 2, yPosition, {
-    align: "center",
-  });
-  yPosition += 4;
-  doc.text(
-    "เลขประจำตัวผู้เสียภาษีอากร 0165538000160",
-    pageWidth / 2,
-    yPosition,
-    {
-      align: "center",
-    },
-  );
-  yPosition += 8;
-
-  // Divider line
-  doc.setDrawColor(0);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  yPosition += 4;
-
-  // Document title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text("ใบกำกับภาษี / TAX INVOICE", pageWidth / 2, yPosition, {
-    align: "center",
-  });
-  yPosition += 6;
-
-  // Divider line
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  yPosition += 5;
-
-  // Faculty/Branch name
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text("คณะสัตวแพทยศาสตร์", pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 4;
-  doc.setFontSize(9);
-  doc.text("Faculty of Veterinary Medicine", pageWidth / 2, yPosition, {
-    align: "center",
-  });
-  yPosition += 4;
-  doc.text("โทรศัพท์ 0-5394-3999 ต่อ 4050", pageWidth / 2, yPosition, {
-    align: "center",
-  });
-  yPosition += 10;
-
-  // ─── CUSTOMER SECTION ─────────────────────────────────────────────────
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-
-  // Customer info block
-  const leftX = margin;
-  doc.text("ชื่อลูกค้า / Customer Name :", leftX, yPosition);
-  doc.text(data.customerName, leftX + 60, yPosition);
-  yPosition += 5;
-
-  doc.text("ที่อยู่ / Address :", leftX, yPosition);
-  const addressLines = doc.splitTextToSize(
-    data.customerAddress,
-    contentWidth - 60,
-  );
-  doc.text(addressLines, leftX + 60, yPosition);
-  yPosition += addressLines.length * 4 + 2;
-
-  doc.setFontSize(8);
-  doc.text(
-    `(เลขประจำตัวผู้เสียภาษี ${data.customerTaxId})`,
-    leftX + 60,
-    yPosition,
-  );
-  yPosition += 6;
-
-  doc.setFontSize(10);
-
-  // ─── DOCUMENT INFO SECTION (Right-aligned) ────────────────────────────
-  const infoStartY = yPosition - 18; // Align with customer info start
-  const rightInfoX = pageWidth - margin - 50;
-
-  doc.text("เลขที่ใบสำคัญรับ / Document No. :", rightInfoX, infoStartY);
-  doc.setFont("helvetica", "bold");
-  doc.text(data.docNumber, rightInfoX + 55, infoStartY);
-
-  doc.setFont("helvetica", "normal");
-  doc.text("วันที่ / Date :", rightInfoX, infoStartY + 6);
-  doc.text(data.date, rightInfoX + 55, infoStartY + 6);
-
-  yPosition += 8;
-
-  // ─── ITEMS TABLE ──────────────────────────────────────────────────────
-  const tableData = [
-    ["ใบแจ้งหนี้/INV.", "ลำดับ/No.", "รายการ/Description", "ราคารวม/Total"],
-    [data.invoiceRef, "1", data.description, `${data.total.toFixed(2)}`],
+/** Format a Date as Thai Buddhist-Era string: "12 พฤษภาคม 2569/ 12 MAY 2026" */
+function getThaiBuddhistDate(d: Date = new Date()): string {
+  const thMonth = [
+    "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน",
+    "พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม",
+    "กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
   ];
+  const enMonth = [
+    "JAN","FEB","MAR","APR","MAY","JUN",
+    "JUL","AUG","SEP","OCT","NOV","DEC",
+  ];
+  const m = d.getMonth();
+  return `${d.getDate()} ${thMonth[m]} ${d.getFullYear() + 543}/ ${d.getDate()} ${enMonth[m]} ${d.getFullYear()}`;
+}
 
-  const tableConfig: any = {
-    startY: yPosition,
-    head: [tableData[0]],
-    body: [tableData[1]],
-    margin: margin,
-    didDrawCell: function (cell: any) {
-      // Custom styling for table
-    },
-    headStyles: {
-      fillColor: [79, 129, 189],
-      textColor: 255,
-      fontStyle: "bold",
-      fontSize: 9,
-      cellPadding: 3,
-    },
-    bodyStyles: {
-      fontSize: 10,
-      cellPadding: 3,
-    },
-    columnStyles: {
-      0: { cellWidth: 35, halign: "center" },
-      1: { cellWidth: 20, halign: "center" },
-      2: { cellWidth: contentWidth - 80, halign: "left" },
-      3: { cellWidth: 25, halign: "right" },
-    },
-    theme: "grid" as const,
+/**
+ * Generate A5 CMU Tax Invoice PDF
+ * Layout matches /docs/Ex_.jpg — two-column header, items table, footer
+ */
+export async function generateReceiptPDF(data: ReceiptData): Promise<void> {
+  // ── Page setup ──────────────────────────────────────────────────────────────
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" });
+  const pageW = 148;
+  const margin = 10;
+  const contentW = pageW - margin * 2; // 128 mm
+
+  // ── Thai font (NotoSansThai from /public/fonts/) ──────────────────────────
+  const FONT_NAME = "NotoSansThai";
+  let usedFont = "helvetica";
+  try {
+    const [regular, bold] = await Promise.all([
+      loadFontAsBase64(
+        "/fonts/NotoSansThai/NotoSansThai_SemiCondensed-Regular.ttf",
+      ),
+      loadFontAsBase64(
+        "/fonts/NotoSansThai/NotoSansThai_SemiCondensed-Bold.ttf",
+      ),
+    ]);
+    if (regular) {
+      doc.addFileToVFS("NotoSansThai-Regular.ttf", regular);
+      doc.addFont("NotoSansThai-Regular.ttf", FONT_NAME, "normal");
+    }
+    if (bold) {
+      doc.addFileToVFS("NotoSansThai-Bold.ttf", bold);
+      doc.addFont("NotoSansThai-Bold.ttf", FONT_NAME, "bold");
+    }
+    if (regular && bold) usedFont = FONT_NAME;
+  } catch {
+    /* fallback to helvetica — Thai glyphs won't render but layout is preserved */
+  }
+
+  // ── Colour triplets for setTextColor / setDrawColor ───────────────────────
+  const navy: [number, number, number]     = [26,  60,  124];
+  const black: [number, number, number]    = [0,   0,   0  ];
+  const gray: [number, number, number]     = [85,  85,  85 ];
+  const lightBg: [number, number, number]  = [245, 245, 245];
+
+  // ── Layout helpers ────────────────────────────────────────────────────────
+  const col1X  = margin;          // left column start  (10 mm)
+  const col2X  = pageW - margin;  // right column RHS  (138 mm)
+  const midX   = pageW / 2;       // centre             (74 mm)
+  const lineH  = 3.5;             // small-text line height
+  let y = margin;                 // running Y cursor
+
+  const setF = (style: "normal" | "bold", size: number) => {
+    doc.setFont(usedFont, style);
+    doc.setFontSize(size);
   };
 
-  autoTable(doc, tableConfig);
-  yPosition = (doc as any).lastAutoTable.finalY + 8;
+  // ── Layout stub to avoid unused-var warning ───────────────────────────────
+  void contentW;
 
-  // ─── SUMMARY SECTION (Right-aligned totals) ──────────────────────────
-  const summaryX = pageWidth - margin - 60;
-  const labelX = summaryX - 5;
-  const valueX = pageWidth - margin - 5;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-
-  // Exclude VAT
+  // ────────────────────────────────────────────────────────────────────────────
+  // A  TWO-COLUMN HEADER
+  // ────────────────────────────────────────────────────────────────────────────
+  setF("bold", 10);
+  doc.setTextColor(...navy);
+  doc.text("มหาวิทยาลัยเชียงใหม่", col1X, y);
   doc.text(
-    "มูลค่าสินค้าหรือบริการก่อนภาษีมูลค่าเพิ่ม",
-    labelX - 50,
-    yPosition,
-    {
-      align: "right",
-    },
+    "คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่",
+    col2X,
+    y,
+    { align: "right" },
   );
-  doc.text("Exclude VAT", labelX - 50, yPosition + 4, { align: "right" });
-  doc.setFont("helvetica", "bold");
-  doc.text(`: ${data.subtotal.toFixed(2)}`, labelX, yPosition, {
+  y += 5;
+
+  setF("normal", 6.5);
+  doc.setTextColor(...black);
+
+  const leftHdrLines = [
+    "Chiang Mai University",
+    "239 ถนนห้วยแก้ว ต.สุเทพ อ.เมือง จ.เชียงใหม่ 50200",
+    "239 Huaykaew Rd. T.Suthep A.Mueang, Chiang Mai 50200",
+    "โทรศัพท์/Tel : 053-941000",
+    "เลขประจำตัวผู้เสียภาษีอากร/Taxpayer Identification Number",
+    "099 4 00042317 9",
+  ];
+  const rightHdrLines = [
+    "Faculty of Veterinary Medicine CMU",
+    "155 หมู่ที่ 2 ตำบลแม่เหียะ อำเภอเมือง จังหวัดเชียงใหม่ 50100",
+    "Moo 2 Mae Hia, Mueang, Chiang Mai 50100 THAILAND",
+    "โทรศัพท์/Tel : 053-948069",
+  ];
+
+  let yL = y;
+  let yR = y;
+  leftHdrLines.forEach((l) => { doc.text(l, col1X, yL);             yL += lineH; });
+  rightHdrLines.forEach((l) => { doc.text(l, col2X, yR, { align: "right" }); yR += lineH; });
+
+  // Document title centred at the same row as the 5th left line
+  setF("bold", 9);
+  doc.setTextColor(...black);
+  doc.text("ใบกำกับภาษี/Tax Invoice", midX, y + lineH * 4, { align: "center" });
+
+  y = Math.max(yL, yR) + 3;
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // B  CUSTOMER INFO (left) + DOCUMENT INFO (right)
+  // ────────────────────────────────────────────────────────────────────────────
+  setF("normal", 8);
+  doc.setTextColor(...black);
+
+  const sectionBTop = y;
+  doc.text(`ชื่อลูกค้า/Customer Name : ${data.customerName}`, col1X, y);
+  doc.text(
+    `เลขที่ใบสำคัญรับ/Document No.  ${data.docNumber ?? "draft"}`,
+    col2X,
+    y,
+    { align: "right" },
+  );
+  y += 4.5;
+
+  // Address (wraps ≈60 % of content width to leave room for date)
+  const addrText = `ที่อยู่/Address : ${data.customerAddress}`;
+  const addrLines: string[] = doc.splitTextToSize(addrText, 76);
+  addrLines.forEach((line: string, i: number) => {
+    doc.text(line, col1X, y + i * 4);
+  });
+
+  // Date right-aligned, on same row as second address line
+  const dateDisplay = data.date ?? getThaiBuddhistDate();
+  doc.text(`วันที่/Date  ${dateDisplay}`, col2X, sectionBTop + 4.5 + 4, {
     align: "right",
   });
-  yPosition += 9;
 
-  // VAT (only if applicable)
-  doc.setFont("helvetica", "normal");
-  if (data.vat > 0) {
-    doc.text("ภาษีมูลค่าเพิ่ม 7%", labelX - 50, yPosition, { align: "right" });
-    doc.text("VAT", labelX - 50, yPosition + 4, { align: "right" });
-    doc.setFont("helvetica", "bold");
-    doc.text(`: ${data.vat.toFixed(2)}`, labelX, yPosition, { align: "right" });
-    yPosition += 9;
-  }
+  y += addrLines.length * 4 + 1;
 
-  // Divider line
-  doc.setDrawColor(100);
-  doc.setLineWidth(0.5);
-  doc.line(labelX - 50, yPosition, pageWidth - margin, yPosition);
-  yPosition += 5;
+  setF("normal", 7.5);
+  doc.text(`(เลขประจำตัวผู้เสียภาษี ${data.customerTaxId})`, col1X, y);
+  y += 5;
 
-  // Total
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("จำนวนเงินรวม / Total", labelX - 50, yPosition, { align: "right" });
-  doc.text(`: ${data.total.toFixed(2)}`, labelX, yPosition, { align: "right" });
+  // ────────────────────────────────────────────────────────────────────────────
+  // C  ITEMS TABLE
+  // ────────────────────────────────────────────────────────────────────────────
+  const vatRate = data.vatRate ?? 0;
+  const subtotal = data.totalPrice;
+  const vat = vatRate > 0 ? parseFloat((subtotal * vatRate / 100).toFixed(2)) : 0;
+  const total = subtotal + vat;
+  const fmtTH = (n: number) =>
+    n.toLocaleString("th-TH", { minimumFractionDigits: 2 });
 
-  yPosition += 12;
-
-  // ─── FOOTER SECTION ───────────────────────────────────────────────────
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-
-  doc.text("จำนวนเงิน (ตัวอักษร):", margin, yPosition);
-  doc.text(`${data.amountInWords}`, margin + 40, yPosition);
-  yPosition += 5;
-
-  doc.text("Amount in Words:", margin, yPosition);
-  doc.text(`${data.amountInWordsEN}`, margin + 40, yPosition);
-  yPosition += 10;
-
-  doc.text("ช่องทางการชำระเงิน / Pay By :", margin, yPosition);
-  doc.text(`${data.paymentMethod}`, margin + 55, yPosition);
-  yPosition += 6;
-
-  doc.text("ชำระโดย / By :", margin, yPosition);
-  doc.text("……………………………………………", margin + 30, yPosition);
-  yPosition += 8;
-
-  doc.setFontSize(9);
-  const noteLines = doc.splitTextToSize(data.paymentNote, contentWidth - 10);
-  doc.text(noteLines, margin, yPosition);
-
-  yPosition += noteLines.length * 4 + 10;
-
-  // Thank you message
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("ขอบคุณที่ใช้บริการ / Thank you", pageWidth / 2, yPosition, {
-    align: "center",
+  autoTable(doc, {
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [[
+      { content: "ใบแจ้งหนี้/INV.",    styles: { halign: "center" } },
+      { content: "ลำดับ/No.",          styles: { halign: "center" } },
+      { content: "รายการ/Description", styles: { halign: "center" } },
+      { content: "ราคารวม/Total",      styles: { halign: "right"  } },
+    ]],
+    body: [[
+      { content: "",                styles: { halign: "center" } },
+      { content: "1",               styles: { halign: "center" } },
+      { content: data.description,  styles: { halign: "left"   } },
+      { content: fmtTH(subtotal),   styles: { halign: "right"  } },
+    ]],
+    styles: {
+      font: usedFont,
+      fontSize: 7.5,
+      cellPadding: 2,
+      lineColor: black,
+      lineWidth: 0.2,
+      textColor: black,
+    },
+    headStyles: {
+      fillColor: lightBg,
+      textColor: black,
+      fontStyle: "bold",
+      fontSize: 7.5,
+    },
+    columnStyles: {
+      0: { cellWidth: 20 },
+      1: { cellWidth: 12 },
+      2: { cellWidth: 70 },
+      3: { cellWidth: 26 },
+    },
+    theme: "grid" as const,
   });
 
-  // Footer text
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text(`หน้า ${i} จาก ${pageCount}`, pageWidth / 2, pageHeight - 10, {
-      align: "center",
-    });
-    doc.text(
-      `เอกสารนี้สร้างเมื่อ: ${new Date().toLocaleDateString("th-TH")}`,
-      pageWidth - margin,
-      pageHeight - 10,
-      { align: "right" },
-    );
+  y = (doc as any).lastAutoTable.finalY + 3;
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // D  SUMMARY (right-aligned, matches reference)
+  // ────────────────────────────────────────────────────────────────────────────
+  doc.setTextColor(...black);
+
+  // Value column right-aligns at col2X; label column right-aligns 28 mm left of that
+  const valRX   = col2X;          // 138
+  const labelRX = col2X - 28 - 2; // 108
+
+  type SRow = { label: string; value: string; bold: boolean };
+  const summaryRows: SRow[] = [
+    {
+      label: "มูลค่าสินค้าหรือบริการก่อนภาษีมูลค่าเพิ่ม/Exclude VAT",
+      value: fmtTH(subtotal),
+      bold: false,
+    },
+    {
+      label: "ภาษีมูลค่าเพิ่ม 7%/Vat",
+      value: fmtTH(vat),
+      bold: false,
+    },
+    {
+      label: "จำนวนเงินรวม/Total",
+      value: fmtTH(total),
+      bold: true,
+    },
+  ];
+
+  summaryRows.forEach(({ label, value, bold }, i) => {
+    setF(bold ? "bold" : "normal", 7.5);
+    doc.setTextColor(...black);
+    doc.text(label, labelRX, y, { align: "right" });
+    doc.text(value, valRX,   y, { align: "right" });
+
+    // underline — light grey for sub-rows, solid black for total
+    const isLast = i === summaryRows.length - 1;
+    doc.setDrawColor(...(isLast ? black : ([200, 200, 200] as [number, number, number])));
+    doc.setLineWidth(isLast ? 0.3 : 0.1);
+    doc.line(labelRX - 48, y + 1, valRX, y + 1);
+
+    y += 5;
+  });
+
+  y += 3;
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // E  FOOTER
+  // ────────────────────────────────────────────────────────────────────────────
+  setF("bold", 8);
+  doc.setTextColor(...black);
+  doc.text(`จำนวนเงิน(ตัวอักษร) :  ${data.amountInWords}`, col1X, y);
+  y += 4.5;
+
+  setF("normal", 8);
+  if (data.amountInWordsEN) {
+    doc.text(`Amount in Words : ${data.amountInWordsEN}`, col1X, y);
+    y += 4.5;
   }
 
-  // Save the PDF with proper filename
-  const filename = `receipt-${data.docNumber}-${data.dateEN.replace(/\s/g, "-")}.pdf`;
-  doc.save(filename);
-};
+  doc.text("ช่องทางการชำระเงิน/Pay By : ธนาคารส่วนงาน", col1X, y);
+  y += 8;
+  doc.text("ชำระโดย/By………………………………………………", col1X, y);
+  y += 5;
+
+  setF("normal", 7.5);
+  doc.setTextColor(...gray);
+  doc.text("เงินโอนเข้า SCB#12002-0", col1X, y);
+
+  // ── Save PDF ──────────────────────────────────────────────────────────────
+  const safeDate = (data.date ?? new Date().toISOString().slice(0, 10))
+    .replace(/[/\\\s:]+/g, "-")
+    .replace(/-{2,}/g, "-");
+  doc.save(`receipt-${data.docNumber ?? "draft"}-${safeDate}.pdf`);
+}
 
 // Helper functions
 const calculateAverageScore = (evaluations: any[]) => {

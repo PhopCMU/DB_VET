@@ -26,6 +26,7 @@ import {
   generateReceiptPDF,
   numberToThaiWords,
   numberToEnglishWords,
+  type ReceiptData,
 } from "@/app/lib/pdfGenerator";
 import { GetScbData, GetScbInquiry } from "@/app/routers/SCB/GetRouter";
 import {
@@ -630,54 +631,46 @@ export default function QRCodePayment() {
     }
   };
 
-  // Generate Receipt PDF
-  const handleGenerateReceipt = (item: ScbTransaction) => {
+  // Generate Receipt PDF (async — loads Thai font then saves)
+  const handleGenerateReceipt = async (item: ScbTransaction) => {
+    if (!item?.amount) return toast.warn("ไม่มีจำนวนเงิน");
+    if (!item?.transactionDateandTime)
+      return toast.warn("ไม่มีวันเวลาการชำระเงิน");
+
+    const amount = parseFloat(item.amount.toString()) || 0;
+    if (amount <= 0) return toast.warn("จำนวนเงินต้องมากกว่า 0");
+
+    const txDate = new Date(item.transactionDateandTime);
+
+    // Format date as Thai Buddhist Era: "12 พฤษภาคม 2569/ 12 MAY 2026"
+    const thMonths = [
+      "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน",
+      "พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม",
+      "กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
+    ];
+    const enMonths = ["JAN","FEB","MAR","APR","MAY","JUN",
+      "JUL","AUG","SEP","OCT","NOV","DEC"];
+    const m = txDate.getMonth();
+    const txDateStr = `${txDate.getDate()} ${thMonths[m]} ${txDate.getFullYear() + 543}/ ${txDate.getDate()} ${enMonths[m]} ${txDate.getFullYear()}`;
+
+    const docNumber =
+      item.transactionId || item.billPaymentRef2 || `TX-${Date.now()}`;
+
+    const receiptData: ReceiptData = {
+      docNumber:       docNumber.substring(0, 20),
+      date:            txDateStr,
+      customerName:    item.payerName || "ผู้ชำระเงินผ่าน SCB QR",
+      customerAddress: "ศูนย์บริหารการเงิน คณะสัตวแพทยศาสตร์",
+      customerTaxId:   "-",
+      description:     `ค่าใช้สอยคณะสัตวแพทยศาสตร์ (REF: ${item.billPaymentRef2 || "-"})`,
+      totalPrice:      amount,
+      amountInWords:   numberToThaiWords(amount),
+      amountInWordsEN: numberToEnglishWords(amount),
+      vatRate:         0, // VAT-exempt
+    };
+
     try {
-      if (!item?.amount) return toast.warn("ไม่มีจำนวนเงิน");
-      if (!item?.transactionDateandTime)
-        return toast.warn("ไม่มีวันเวลาการชำระเงิน");
-
-      const amount = parseFloat(item.amount.toString()) || 0;
-      if (amount <= 0) return toast.warn("จำนวนเงินต้องมากกว่า 0");
-
-      // Parse transaction date
-      const txDate = new Date(item.transactionDateandTime);
-      const dateStr = txDate.toLocaleDateString("th-TH", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      const dateStrEN = txDate.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-
-      // Generate doc number from transaction ID or REF
-      const docNumber =
-        item.transactionId || item.billPaymentRef2 || `TX-${Date.now()}`;
-
-      // Prepare receipt data
-      const receiptData = {
-        docNumber: docNumber.substring(0, 15),
-        date: dateStr,
-        dateEN: dateStrEN,
-        customerName:
-          item.payerName || "ผู้ชำระเงินผ่าน SCB QR",
-        customerAddress: "ศูนย์บริหารการเงิน คณะสัตวแพทยศาสตร์",
-        customerTaxId: "-",
-        invoiceRef: item.billPaymentRef1 || "-",
-        description: `ค่าใช้สอยคณะสัตวแพทยศาสตร์ (REF: ${item.billPaymentRef2 || "-"})`,
-        subtotal: amount,
-        vat: 0, // VAT exempt for most cases
-        total: amount,
-        amountInWords: numberToThaiWords(amount),
-        amountInWordsEN: numberToEnglishWords(amount),
-        paymentMethod: "ธนาคารกรุงเทพ (Siam Commercial Bank) - QR Code",
-        paymentNote: `เงินโอนเข้า SCB QR Code ลง ${dateStr}`,
-      };
-
-      generateReceiptPDF(receiptData);
+      await generateReceiptPDF(receiptData);
       toast.success("สร้างใบเสร็จสำเร็จ!");
     } catch (error) {
       console.error("Error generating receipt:", error);
@@ -1325,12 +1318,12 @@ export default function QRCodePayment() {
                       </>
                     )}
                   </motion.button>
-                  {/* <button
-                  onClick={handleTestPush}
-                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded mr-2"
-                >
-                  Send Test Payload
-                </button> */}
+                  <button
+                    onClick={handleTestPush}
+                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded mr-2"
+                  >
+                    Send Test Payload
+                  </button>
                   {qrImageBase64 && (
                     <div className="mt-4">
                       <button
@@ -1680,6 +1673,13 @@ export default function QRCodePayment() {
                       </div>
                     )}
                   </div>
+
+                  <motion.button
+                    onClick={() => setShowQrGenerator((p) => !p)}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium shadow-sm hover:from-blue-700 hover:to-purple-700 transition-colors"
+                  >
+                    {showQrGenerator ? "Hide QR Code" : "QR Code Payment"}
+                  </motion.button>
                 </div>
               </div>
             </div>
