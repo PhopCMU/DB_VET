@@ -1,0 +1,101 @@
+{
+  "entries": [
+    {
+      "id": "core/security-baseline",
+      "path": "core/security-baseline.md",
+      "suggested_tags": ["security", "nextjs", "baseline", "frontend"]
+    },
+    {
+      "id": "core/security-frontend-xss",
+      "path": "core/security-frontend-xss.md",
+      "suggested_tags": ["security", "nextjs", "xss", "frontend"]
+    },
+    {
+      "id": "core.security-baseline",
+      "path": ".agents/skills/core/security-baseline.md",
+      "suggested_tags": [
+        "security",
+        "baseline",
+        "checklist",
+        "nextjs",
+        "app-router"
+      ]
+    },
+    {
+      "id": "core.security-frontend-xss",
+      "path": ".agents/skills/core/security-frontend-xss.md",
+      "suggested_tags": ["security", "xss", "react", "nextjs"]
+    },
+    {
+      "id": "core.security-axios-auth",
+      "path": ".agents/skills/core/security-axios-auth.md",
+      "suggested_tags": [
+        "security",
+        "auth",
+        "axios",
+        "cookies",
+        "storage",
+        "csrf",
+        "nextjs"
+      ]
+    },
+    {
+      "id": "core.security-crypto-js-usage",
+      "path": ".agents/skills/core/security-crypto-js-usage.md",
+      "suggested_tags": ["security", "crypto-js", "hashing", "nextjs"]
+    },
+    {
+      "id": "core.security-dependencies",
+      "path": ".agents/skills/core/security-dependencies.md",
+      "suggested_tags": [
+        "security",
+        "dependencies",
+        "supply-chain",
+        "npm",
+        "xlsx",
+        "nextjs"
+      ]
+    },
+    {
+      "id": "libs.security",
+      "path": ".agents/skills/libs/security.md",
+      "suggested_tags": ["security", "hub", "nextjs"]
+    },
+    {
+      "id": "core.code-review-playbook",
+      "path": ".agents/skills/core/code-review-playbook.md",
+      "suggested_tags": ["review", "playbook", "workflow", "nextjs"]
+    },
+    {
+      "id": "core.code-review-react-ts",
+      "path": ".agents/skills/core/code-review-react-ts.md",
+      "suggested_tags": ["review", "react", "typescript", "nextjs"]
+    },
+    {
+      "id": "core.code-review-security",
+      "path": ".agents/skills/core/code-review-security.md",
+      "suggested_tags": ["review", "security", "xss", "auth", "nextjs"]
+    },
+    {
+      "id": "core.code-review-performance",
+      "path": ".agents/skills/core/code-review-performance.md",
+      "suggested_tags": ["review", "performance", "nextjs"]
+    },
+    {
+      "id": "core.code-review-architecture-folders",
+      "path": ".agents/skills/core/code-review-architecture-folders.md",
+      "suggested_tags": [
+        "review",
+        "architecture",
+        "folders",
+        "nextjs",
+        "app-router"
+      ]
+    },
+    {
+      "id": "core.code-review-pr-template",
+      "path": ".agents/skills/core/code-review-pr-template.md",
+      "suggested_tags": ["review", "pr", "template", "nextjs"]
+    }
+  ]
+}

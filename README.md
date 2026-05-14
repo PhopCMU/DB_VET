@@ -60,6 +60,7 @@ When making decisions, use sources in this order:
 1) This README
 2) Project code
 3) Local skills in `./.agents/skills/` (**ONLY** the allowed ones below)
+  - Before using or adding local skills, check `.agents/skills/_index.json`. If you need to add entries, perform an idempotent merge (add missing entries only; preserve existing entries). Avoid automatic repeated merges to prevent discovery loops; ask the user if unsure.
 
 ### Allowed Frontend Skills (ONLY)
 - `./.agents/skills/next-best-practices/`

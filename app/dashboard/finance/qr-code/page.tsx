@@ -21,6 +21,12 @@ import {
   PostVoid,
 } from "@/app/routers/SCB/PostRouter";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
+import {
+  exportReceipt,
+  generateReceiptPDF,
+  numberToThaiWords,
+  numberToEnglishWords,
+} from "@/app/lib/pdfGenerator";
 import { GetScbData, GetScbInquiry } from "@/app/routers/SCB/GetRouter";
 import {
   generateCustomCode20,
@@ -28,11 +34,14 @@ import {
 } from "@/app/lib/generators/codeGenerator";
 
 import { useScbWebSocket } from "@/app/hooks/useSocket";
+import { usePermission } from "@/app/context/UsePermission";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ScbVoidEntry {
+  scbVoidId: string;
   responseStatus: string;
   responseCode?: string;
+  responseCodeDescription?: string;
   extStatusDesc?: string;
   createdAt: string;
 }
@@ -49,6 +58,8 @@ interface ScbTransaction {
   createdAt: string;
   transactionId?: string | null;
   sendingBankCode?: string | null;
+  receivingBankCode?: string | null;
+  transactionType?: string | null;
   ScbVoid: ScbVoidEntry[];
 }
 
@@ -103,6 +114,8 @@ export default function QRCodePayment() {
   const [loadingVoid, setLoadingVoid] = useState<Record<string, boolean>>({});
   const [paymentSuccessData, setPaymentSuccessData] =
     useState<PaymentSuccessData | null>(null);
+  const [showQrGenerator, setShowQrGenerator] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -164,6 +177,13 @@ export default function QRCodePayment() {
   const paginatedData = filteredData.slice(
     startIndex,
     startIndex + itemsPerPage,
+  );
+
+  const SUB_MENU_ID = "e432a5bf-eda0-4638-848d-26df9194f57e";
+
+  const { canCreate, canEdit, canDelete, canView } = usePermission(
+    SUB_MENU_ID,
+    "",
   );
 
   const { isConnected, countdown, formatTime, connect, disconnect } =
@@ -610,6 +630,61 @@ export default function QRCodePayment() {
     }
   };
 
+  // Generate Receipt PDF
+  const handleGenerateReceipt = (item: ScbTransaction) => {
+    try {
+      if (!item?.amount) return toast.warn("ไม่มีจำนวนเงิน");
+      if (!item?.transactionDateandTime)
+        return toast.warn("ไม่มีวันเวลาการชำระเงิน");
+
+      const amount = parseFloat(item.amount.toString()) || 0;
+      if (amount <= 0) return toast.warn("จำนวนเงินต้องมากกว่า 0");
+
+      // Parse transaction date
+      const txDate = new Date(item.transactionDateandTime);
+      const dateStr = txDate.toLocaleDateString("th-TH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const dateStrEN = txDate.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+
+      // Generate doc number from transaction ID or REF
+      const docNumber =
+        item.transactionId || item.billPaymentRef2 || `TX-${Date.now()}`;
+
+      // Prepare receipt data
+      const receiptData = {
+        docNumber: docNumber.substring(0, 15),
+        date: dateStr,
+        dateEN: dateStrEN,
+        customerName:
+          item.payerName || "ผู้ชำระเงินผ่าน SCB QR",
+        customerAddress: "ศูนย์บริหารการเงิน คณะสัตวแพทยศาสตร์",
+        customerTaxId: "-",
+        invoiceRef: item.billPaymentRef1 || "-",
+        description: `ค่าใช้สอยคณะสัตวแพทยศาสตร์ (REF: ${item.billPaymentRef2 || "-"})`,
+        subtotal: amount,
+        vat: 0, // VAT exempt for most cases
+        total: amount,
+        amountInWords: numberToThaiWords(amount),
+        amountInWordsEN: numberToEnglishWords(amount),
+        paymentMethod: "ธนาคารกรุงเทพ (Siam Commercial Bank) - QR Code",
+        paymentNote: `เงินโอนเข้า SCB QR Code ลง ${dateStr}`,
+      };
+
+      generateReceiptPDF(receiptData);
+      toast.success("สร้างใบเสร็จสำเร็จ!");
+    } catch (error) {
+      console.error("Error generating receipt:", error);
+      toast.error("เกิดข้อผิดพลาดในการสร้างใบเสร็จ");
+    }
+  };
+
   const downloadQRSection = () => {
     if (qrSectionRef.current) {
       html2canvas(qrSectionRef.current, {
@@ -651,41 +726,164 @@ export default function QRCodePayment() {
   };
 
   // ─── Export helpers ──────────────────────────────────────────────────────────
-  type ExportField =
-    | "transactionDateandTime"
-    | "billPaymentRef1"
-    | "amount"
+  /**
+   * Export field types for SCB transactions
+   * Includes all transaction details plus void information
+   */
+  type ScbExportField =
+    | "scbId"
     | "payerName"
-    | "status"
-    | "transactionId";
+    | "sendingBankCode"
+    | "receivingBankCode"
+    | "amount"
+    | "transactionDate"
+    | "transactionTime"
+    | "billPaymentRef1"
+    | "billPaymentRef2"
+    | "billPaymentRef3"
+    | "reverseFlag"
+    | "transactionType"
+    | "scbVoidId"
+    | "responseStatus"
+    | "responseCodeDescription"
+    | "responseCode";
 
-  const EXPORT_HEADERS: Record<ExportField, string> = {
-    transactionDateandTime: "วันที่/เวลา",
-    billPaymentRef1: "REF1",
-    amount: "จำนวนเงิน",
+  const EXPORT_HEADERS: Record<ScbExportField, string> = {
+    scbId: "SCB ID",
     payerName: "ผู้ชำระ",
-    status: "สถานะ",
-    transactionId: "Transaction ID",
+    sendingBankCode: "ธนาคารผู้ส่ง",
+    receivingBankCode: "ธนาคารผู้รับ",
+    amount: "จำนวนเงิน",
+    transactionDate: "วันที่",
+    transactionTime: "เวลา",
+    billPaymentRef1: "REF1",
+    billPaymentRef2: "REF2",
+    billPaymentRef3: "REF3",
+    reverseFlag: "สถานะคืนเงิน",
+    transactionType: "ประเภทรายการ",
+    scbVoidId: "Void ID",
+    responseStatus: "สถานะ Void",
+    responseCodeDescription: "รายละเอียด",
+    responseCode: "รหัสผลลัพธ์",
   };
 
-  const EXPORT_FIELDS: ExportField[] = [
-    "transactionDateandTime",
-    "billPaymentRef1",
-    "amount",
+  const EXPORT_FIELDS: ScbExportField[] = [
+    "scbId",
     "payerName",
-    "status",
-    "transactionId",
+    "sendingBankCode",
+    "receivingBankCode",
+    "amount",
+    "transactionDate",
+    "transactionTime",
+    "billPaymentRef1",
+    "billPaymentRef2",
+    "billPaymentRef3",
+    "reverseFlag",
+    "transactionType",
+    "scbVoidId",
+    "responseStatus",
+    "responseCodeDescription",
+    "responseCode",
   ];
 
-  const buildExportRows = () =>
-    filteredData.map((item) => ({
-      transactionDateandTime: item.transactionDateandTime ?? "",
-      billPaymentRef1: item.billPaymentRef1 ?? "",
-      amount: item.amount ?? "0",
-      payerName: item.payerName ?? "",
-      status: deriveStatus(item),
-      transactionId: item.transactionId ?? "",
-    }));
+  /**
+   * Safe string conversion for export
+   * Returns "-" for null/undefined, otherwise toString()
+   */
+  const safeSringify = (value: unknown): string => {
+    if (value === null || value === undefined || value === "") return "-";
+    return String(value);
+  };
+
+  /**
+   * Parse date and time from ISO timestamp
+   * Returns [date, time] in format ["YYYY-MM-DD", "HH:mm:ss"]
+   */
+  const splitDatetime = (
+    isoString: string | null | undefined,
+  ): [string, string] => {
+    if (!isoString) return ["-", "-"];
+    try {
+      const date = new Date(isoString);
+      if (isNaN(date.getTime())) return ["-", "-"];
+
+      const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
+      const timeStr = date.toISOString().split("T")[1]?.slice(0, 8) ?? "-"; // HH:mm:ss
+
+      return [dateStr, timeStr];
+    } catch {
+      return ["-", "-"];
+    }
+  };
+
+  /**
+   * Map SCB transactions for export
+   * Expands ScbVoid array: one output row per void (or one row with void columns as "-" if no voids)
+   * Splits transactionDateandTime into date and time columns
+   * Converts bank codes to bank names using bankName()
+   * Returns null-safe export rows
+   */
+  const mapScbTransactionsForExport = (
+    transactions: ScbTransaction[],
+  ): Array<Record<ScbExportField, string>> => {
+    const rows: Array<Record<ScbExportField, string>> = [];
+
+    transactions.forEach((txn) => {
+      const [txnDate, txnTime] = splitDatetime(txn.transactionDateandTime);
+
+      // If there are ScbVoid entries, create one row per void
+      if (txn.ScbVoid && txn.ScbVoid.length > 0) {
+        txn.ScbVoid.forEach((voidEntry) => {
+          rows.push({
+            scbId: safeSringify(txn.scbId),
+            payerName: safeSringify(txn.payerName),
+            sendingBankCode: bankName(txn.sendingBankCode),
+            receivingBankCode: bankName(txn.receivingBankCode),
+            amount: safeSringify(txn.amount),
+            transactionDate: txnDate,
+            transactionTime: txnTime,
+            billPaymentRef1: safeSringify(txn.billPaymentRef1),
+            billPaymentRef2: safeSringify(txn.billPaymentRef2),
+            billPaymentRef3: safeSringify(txn.billPaymentRef3),
+            reverseFlag: safeSringify(txn.reverseFlag),
+            transactionType: safeSringify(txn.transactionType),
+            scbVoidId: safeSringify(voidEntry.scbVoidId),
+            responseStatus: safeSringify(voidEntry.responseStatus),
+            responseCodeDescription: safeSringify(
+              voidEntry.responseCodeDescription,
+            ),
+            responseCode: safeSringify(voidEntry.responseCode),
+          });
+        });
+      } else {
+        // No ScbVoid entries: create one row with void columns as "-"
+        rows.push({
+          scbId: safeSringify(txn.scbId),
+          payerName: safeSringify(txn.payerName),
+          sendingBankCode: bankName(txn.sendingBankCode),
+          receivingBankCode: bankName(txn.receivingBankCode),
+          amount: safeSringify(txn.amount),
+          transactionDate: txnDate,
+          transactionTime: txnTime,
+          billPaymentRef1: safeSringify(txn.billPaymentRef1),
+          billPaymentRef2: safeSringify(txn.billPaymentRef2),
+          billPaymentRef3: safeSringify(txn.billPaymentRef3),
+          reverseFlag: safeSringify(txn.reverseFlag),
+          transactionType: safeSringify(txn.transactionType),
+          scbVoidId: "-",
+          responseStatus: "-",
+          responseCodeDescription: "-",
+          responseCode: "-",
+        });
+      }
+    });
+
+    return rows;
+  };
+
+  const buildExportRows = () => {
+    return mapScbTransactionsForExport(filteredData);
+  };
 
   const computeTotal = () =>
     filteredData.reduce((sum, item) => {
@@ -705,7 +903,8 @@ export default function QRCodePayment() {
         ",",
       ),
     );
-    const totalLine = `"TOTAL","","${total.toFixed(2)}","","",""`;
+    // Total row: only show total in amount column
+    const totalLine = `"TOTAL","","","","${total.toFixed(2)}","","","","","","","","","","",""`;
     const bom = "\uFEFF";
     const blob = new Blob(
       [bom + [headers, ...dataLines, totalLine].join("\n")],
@@ -720,26 +919,45 @@ export default function QRCodePayment() {
     const total = computeTotal();
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("SCB Transactions");
+
     sheet.columns = EXPORT_FIELDS.map((f) => ({
       header: EXPORT_HEADERS[f],
       key: f,
       width:
-        f === "transactionId" ? 38 : f === "transactionDateandTime" ? 26 : 18,
+        f === "responseCodeDescription"
+          ? 30
+          : f === "transactionType"
+            ? 20
+            : 14,
     }));
+
     rows.forEach((row) =>
       sheet.addRow({
         ...row,
         amount: parseFloat(row.amount) || 0,
       }),
     );
+
+    // Add total row
     sheet.addRow({
-      transactionDateandTime: "TOTAL",
-      billPaymentRef1: "",
-      amount: total,
+      scbId: "TOTAL",
       payerName: "",
-      status: "",
-      transactionId: "",
+      sendingBankCode: "",
+      receivingBankCode: "",
+      amount: total,
+      transactionDate: "",
+      transactionTime: "",
+      billPaymentRef1: "",
+      billPaymentRef2: "",
+      billPaymentRef3: "",
+      reverseFlag: "",
+      transactionType: "",
+      scbVoidId: "",
+      responseStatus: "",
+      responseCodeDescription: "",
+      responseCode: "",
     });
+
     const headerRow = sheet.getRow(1);
     headerRow.font = { bold: true };
     headerRow.fill = {
@@ -747,6 +965,7 @@ export default function QRCodePayment() {
       pattern: "solid",
       fgColor: { argb: "FFEEEEEE" },
     };
+
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(
       new Blob([buffer], {
@@ -811,666 +1030,514 @@ export default function QRCodePayment() {
           initial="hidden"
           animate="visible"
         >
+          {/* Toggle to show/hide QR generator (collapsed by default) */}
+          <div className="flex justify-end mb-6">
+            <button
+              onClick={() => setShowQrGenerator((p) => !p)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium shadow-sm hover:from-blue-700 hover:to-purple-700 transition-colors"
+            >
+              {showQrGenerator
+                ? "ซ่อน สร้าง QR Code"
+                : "สร้าง QR Code ชำระเงิน"}
+            </button>
+          </div>
           {/* Main Card */}
-          <motion.div
-            className="bg-white shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-white/20 "
-            variants={cardVariants}
-          >
-            {/* Left Panel - Form Input */}
-            <div className="w-full lg:w-1/2 p-8 lg:p-10">
-              <div className="flex flex-col w-full gap-6">
-                {/* Header */}
-                <motion.div
-                  className="text-center"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-4">
-                    <span className="material-symbols-outlined text-white text-3xl">
-                      qr_code_scanner
-                    </span>
-                  </div>
-                  <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    สร้าง QR Code การชำระเงิน
-                  </h1>
-                  <p className="text-sm text-gray-600 mt-2 font-medium">
-                    คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่
-                  </p>
-                </motion.div>
-
-                {/* Form Fields */}
-                <div className="flex flex-col gap-5">
-                  {/* Amount Field */}
+          {showQrGenerator && (
+            <motion.div
+              className="bg-white shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-white/20 "
+              variants={cardVariants}
+            >
+              {/* Left Panel - Form Input */}
+              <div className="w-full lg:w-1/2 p-8 lg:p-10">
+                <div className="flex flex-col w-full gap-6">
+                  {/* Header */}
                   <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="flex flex-col gap-2"
+                    className="text-center"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
                   >
-                    <label className="text-gray-700 font-medium flex flex-col items-start gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-500 text-lg">
-                          payments
-                        </span>
-                        จำนวนเงิน (บาท)
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-4">
+                      <span className="material-symbols-outlined text-white text-3xl">
+                        qr_code_scanner
+                      </span>
+                    </div>
+                    <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                      สร้าง QR Code การชำระเงิน
+                    </h1>
+                    <p className="text-sm text-gray-600 mt-2 font-medium">
+                      คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่
+                    </p>
+                  </motion.div>
+
+                  {/* Permission Alert - Create */}
+                  {!canCreate && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3"
+                    >
+                      <span className="material-symbols-outlined text-amber-600 text-lg mt-0.5 flex-shrink-0">
+                        lock
+                      </span>
+                      <div className="text-sm text-amber-800">
+                        <p className="font-semibold">
+                          ไม่มีสิทธิ์สร้าง QR Code
+                        </p>
+                        <p className="text-amber-700 text-xs mt-1">
+                          กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์การสร้าง QR Code
+                        </p>
                       </div>
-
-                      <span className="text-[12px] text-blue-950">
-                        Amount of transaction with the length up to 13
-                        characters including "." e.g. 100, 100.00
-                      </span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        name="amount"
-                        placeholder="0.00"
-                        value={paymentData.amount}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        disabled={isQrActive}
-                        className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        attach_money
-                      </span>
-                    </div>
-                  </motion.div>
-
-                  {/* Ref Fields */}
-                  {/* Ref1 */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex flex-col gap-2"
-                  >
-                    <label className="text-gray-700 font-medium flex items-center gap-2">
-                      <span className="material-symbols-outlined text-blue-500 text-lg">
-                        tag
-                      </span>
-                      Ref1
-                      <span className="text-[12px] text-blue-950">
-                        {`(Length: up to 8 Data Type: [AZ] English capital letter and number only)`}
-                      </span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        name="refId1"
-                        placeholder="Ref1"
-                        value={paymentData.refId1 || ""}
-                        onChange={handleChange}
-                        disabled={isQrActive}
-                        maxLength={8}
-                        className="w-full p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
-
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        123
-                      </span>
-                    </div>
-                  </motion.div>
-
-                  {/* Ref2 */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="flex flex-col gap-2"
-                  >
-                    <label className="text-gray-700 font-medium flex items-center gap-2">
-                      <span className="material-symbols-outlined text-blue-500 text-lg">
-                        tag
-                      </span>
-                      Ref2
-                      <span className="text-[12px] text-blue-950">
-                        {`(Length: up to 20 Data Type: [AZ09] English capital letter and number only)`}
-                      </span>
-                    </label>
-                    <div className="relative flex gap-2">
-                      <input
-                        type="text"
-                        name="refId2"
-                        placeholder="Ref2"
-                        value={paymentData.refId2 || ""}
-                        onChange={handleChange}
-                        disabled={isQrActive}
-                        maxLength={20}
-                        className="flex-1 p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
-
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        123
-                      </span>
-                      <motion.button
-                        type="button"
-                        disabled={isQrActive}
-                        onClick={() => {
-                          setPaymentData((prev) => ({
-                            ...prev,
-                            refId2: generateRandomRef2(prev.refId1),
-                          }));
-                        }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-4 bg-gradient-to-r  from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <span className="material-symbols-outlined text-sm">
-                          autorenew
-                        </span>
-                      </motion.button>
-                    </div>
-                  </motion.div>
-
-                  {/* Ref3 */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.5 }}
-                    className="flex flex-col gap-2"
-                  >
-                    <label className="text-gray-700 font-medium flex items-center gap-2">
-                      <span className="material-symbols-outlined text-blue-500 text-lg">
-                        tag
-                      </span>
-                      Ref3
-                      <span className="text-[12px] text-blue-950">
-                        {`(Length: up to 20 Data Type: [AZ09] English capital letter and number only)`}
-                      </span>
-                    </label>
-                    <div className="relative flex gap-2">
-                      <input
-                        type="text"
-                        name="refId3"
-                        placeholder="Ref3"
-                        value={paymentData.refId3 || ""}
-                        onChange={handleChange}
-                        disabled={isQrActive}
-                        maxLength={20}
-                        className="flex-1 uppercase p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      />
-
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        123
-                      </span>
-                      <motion.button
-                        type="button"
-                        disabled={isQrActive}
-                        onClick={() => {
-                          setPaymentData((prev) => ({
-                            ...prev,
-                            refId3: generateRandomRef3(),
-                          }));
-                        }}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <span className="material-symbols-outlined text-sm">
-                          autorenew
-                        </span>
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Generate QR Button */}
-                <motion.button
-                  onClick={generateQRCode}
-                  disabled={isQrActive || isLoading}
-                  className="py-4 px-6 text-lg font-semibold rounded-xl transition-all duration-300 ease-in-out shadow-lg flex items-center justify-center gap-3 mt-4 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                  whileHover={
-                    !isQrActive && !isLoading ? { scale: 1.02, y: -2 } : {}
-                  }
-                  whileTap={!isQrActive && !isLoading ? { scale: 0.98 } : {}}
-                >
-                  {isLoading ? (
-                    <>
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                        className="material-symbols-outlined"
-                      >
-                        progress_activity
-                      </motion.span>
-                      กำลังสร้าง QR Code...
-                    </>
-                  ) : isQrActive ? (
-                    <>
-                      <span className="material-symbols-outlined">
-                        qr_code_2
-                      </span>
-                      QR Code กำลังใช้งาน
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined">
-                        qr_code_2
-                      </span>
-                      สร้าง QR Code
-                    </>
+                    </motion.div>
                   )}
-                </motion.button>
-                <button
+
+                  {/* Form Fields */}
+                  <div className="flex flex-col gap-5">
+                    {/* Amount Field */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex flex-col gap-2"
+                    >
+                      <label className="text-gray-700 font-medium flex flex-col items-start gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-blue-500 text-lg">
+                            payments
+                          </span>
+                          จำนวนเงิน (บาท)
+                          <span className="text-red-500 font-bold">*</span>
+                        </div>
+
+                        <span className="text-[12px] text-gray-500">
+                          ระบุจำนวนเงินตั้งแต่ 1-9999.99 บาท
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          name="amount"
+                          placeholder="0.00"
+                          value={paymentData.amount}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          disabled={isQrActive || !canCreate}
+                          className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          attach_money
+                        </span>
+                      </div>
+                    </motion.div>
+
+                    {/* Ref Fields */}
+                    {/* Ref1 */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="flex flex-col gap-2"
+                    >
+                      <label className="text-gray-700 font-medium flex items-center gap-2">
+                        <span className="material-symbols-outlined text-blue-500 text-lg">
+                          tag
+                        </span>
+                        Ref1 - รหัสประเภท
+                        <span className="text-red-500 font-bold">*</span>
+                        <span className="text-[11px] text-gray-500 font-normal">
+                          (สูงสุด 8 ตัวอักษร)
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="refId1"
+                          placeholder="เช่น: STUD"
+                          value={paymentData.refId1 || ""}
+                          onChange={handleChange}
+                          disabled={isQrActive || !canCreate}
+                          maxLength={8}
+                          className="w-full p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          123
+                        </span>
+                      </div>
+                    </motion.div>
+
+                    {/* Ref2 */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="flex flex-col gap-2"
+                    >
+                      <label className="text-gray-700 font-medium flex items-center gap-2">
+                        <span className="material-symbols-outlined text-blue-500 text-lg">
+                          tag
+                        </span>
+                        Ref2 - อ้างอิงลำดับ
+                        <span className="text-red-500 font-bold">*</span>
+                        <span className="text-[11px] text-gray-500 font-normal">
+                          (สูงสุด 20 ตัวอักษร)
+                        </span>
+                      </label>
+                      <div className="relative flex gap-2">
+                        <input
+                          type="text"
+                          name="refId2"
+                          placeholder="เช่น: STUD00001"
+                          value={paymentData.refId2 || ""}
+                          onChange={handleChange}
+                          disabled={isQrActive || !canCreate}
+                          maxLength={20}
+                          className="flex-1 p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          123
+                        </span>
+                        <motion.button
+                          type="button"
+                          disabled={isQrActive || !canCreate}
+                          onClick={() => {
+                            setPaymentData((prev) => ({
+                              ...prev,
+                              refId2: generateRandomRef2(prev.refId1),
+                            }));
+                          }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-4 bg-gradient-to-r  from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="สร้างอ้างอิง"
+                        >
+                          <span className="material-symbols-outlined text-sm">
+                            autorenew
+                          </span>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+
+                    {/* Ref3 */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="flex flex-col gap-2"
+                    >
+                      <label className="text-gray-700 font-medium flex items-center gap-2">
+                        <span className="material-symbols-outlined text-blue-500 text-lg">
+                          tag
+                        </span>
+                        Ref3 - อ้างอิงเพิ่มเติม
+                        <span className="text-[11px] text-gray-500 font-normal">
+                          (เลือกได้ สูงสุด 20 ตัวอักษร)
+                        </span>
+                      </label>
+                      <div className="relative flex gap-2">
+                        <input
+                          type="text"
+                          name="refId3"
+                          placeholder="เลือกได้"
+                          value={paymentData.refId3 || ""}
+                          onChange={handleChange}
+                          disabled={isQrActive || !canCreate}
+                          maxLength={20}
+                          className="flex-1 uppercase p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          123
+                        </span>
+                        <motion.button
+                          type="button"
+                          disabled={isQrActive || !canCreate}
+                          onClick={() => {
+                            setPaymentData((prev) => ({
+                              ...prev,
+                              refId3: generateRandomRef3(),
+                            }));
+                          }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="สร้างอ้างอิง"
+                        >
+                          <span className="material-symbols-outlined text-sm">
+                            autorenew
+                          </span>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Generate QR Button */}
+                  <motion.button
+                    onClick={generateQRCode}
+                    disabled={isQrActive || isLoading || !canCreate}
+                    className="py-4 px-6 text-lg font-semibold rounded-xl transition-all duration-300 ease-in-out shadow-lg flex items-center justify-center gap-3 mt-4 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    whileHover={
+                      !isQrActive && !isLoading && canCreate
+                        ? { scale: 1.02, y: -2 }
+                        : {}
+                    }
+                    whileTap={
+                      !isQrActive && !isLoading && canCreate
+                        ? { scale: 0.98 }
+                        : {}
+                    }
+                  >
+                    {isLoading ? (
+                      <>
+                        <motion.span
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                          className="material-symbols-outlined"
+                        >
+                          progress_activity
+                        </motion.span>
+                        กำลังสร้าง QR Code...
+                      </>
+                    ) : isQrActive ? (
+                      <>
+                        <span className="material-symbols-outlined">
+                          qr_code_2
+                        </span>
+                        QR Code กำลังใช้งาน
+                      </>
+                    ) : !canCreate ? (
+                      <>
+                        <span className="material-symbols-outlined">lock</span>
+                        ไม่มีสิทธิ์
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined">
+                          qr_code_2
+                        </span>
+                        สร้าง QR Code
+                      </>
+                    )}
+                  </motion.button>
+                  {/* <button
                   onClick={handleTestPush}
                   className="mt-2 px-4 py-2 bg-blue-600 text-white rounded mr-2"
                 >
                   Send Test Payload
-                </button>
-              </div>
-            </div>
-
-            {/* Right Panel - QR Code Display */}
-            <div className="w-full lg:w-1/2 bg-gradient-to-br from-blue-50/50 to-purple-50/50 p-8 lg:p-1 flex flex-col justify-center items-center border-t lg:border-t-0 lg:border-l border-gray-200/50">
-              <AnimatePresence mode="wait">
-                {qrImageBase64 ? (
-                  <motion.div
-                    key="qr-active"
-                    className="w-full "
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {/* QR Code Card */}
-                    <motion.div
-                      className="bg-white px-10 py-8 border border-gray-100"
-                      initial={{ y: 10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      {/* Header - SCB Style */}
-                      <div className="text-center mb-6">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <div className="w-8 h-8 bg-purple-900 rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                              SCB
-                            </span>
-                          </div>
-                          <h1 className="text-2xl font-bold text-gray-800">
-                            SCB*
-                          </h1>
-                        </div>
-                        <h2 className="text-lg font-semibold text-gray-700">
-                          THAI QR PAYMENT
-                        </h2>
-                        <div className="w-20 h-1 bg-purple-900 mx-auto mt-2 rounded-full"></div>
-                      </div>
-
-                      {/* Divider */}
-                      <div className="border-t border-gray-300 my-4"></div>
-
-                      {/* Timer & Status Section */}
-                      <motion.div
-                        className=""
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
+                </button> */}
+                  {qrImageBase64 && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setShowQrModal(true)}
+                        className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md hover:bg-indigo-700 transition-colors"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`w-3 h-3 rounded-full ${
-                                isConnected ? "bg-green-500" : "bg-red-500"
-                              }`}
-                            ></span>
-                            <span className="font-semibold text-gray-800">
-                              {isConnected ? "Connected" : "Disconnected"}
-                            </span>
+                        <span className="material-symbols-outlined">
+                          qr_code_scanner
+                        </span>
+                        ชำระเงินผ่าน QR Code
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* QR display moved to modal (opens when user clicks "ชำระเงินผ่าน QR Code") */}
+            </motion.div>
+          )}
+
+          {/* QR Modal */}
+          {showQrModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative overflow-y-auto">
+                <button
+                  onClick={() => setShowQrModal(false)}
+                  aria-label="Close"
+                  className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                >
+                  &times;
+                </button>
+
+                <div className="p-6">
+                  <AnimatePresence mode="wait">
+                    {qrImageBase64 ? (
+                      <motion.div
+                        key="modal-qr-active"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.18 }}
+                      >
+                        <div className="text-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            SCB THAI QR PAYMENT
+                          </h3>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="bg-white p-2 rounded-xl border-2 border-gray-200">
+                            <QRCodeDisplay
+                              base64Data={qrImageBase64}
+                              altText="สแกนเพื่อชำระเงิน"
+                              width={280}
+                              height={280}
+                            />
                           </div>
-                          <div className="flex items-center  gap-2">
-                            <span className="material-symbols-outlined text-red-500 text-base">
-                              schedule
-                            </span>
-                            {isConnected && countdown !== null && (
-                              <div className="text-xl font-mono font-bold text-red-600">
-                                {formatTime(countdown)}
+
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-green-600">
+                              {Number(paymentData.amount).toLocaleString(
+                                "th-TH",
+                              )}{" "}
+                              บาท
+                            </p>
+                          </div>
+
+                          <div className="w-full p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-700">
+                            <div className="flex justify-between">
+                              <span className="font-medium">Ref1</span>
+                              <span className="font-mono">
+                                {paymentData.refId1}
+                              </span>
+                            </div>
+                            <div className="flex justify-between mt-2">
+                              <span className="font-medium">Ref2</span>
+                              <span className="font-mono">
+                                {paymentData.refId2}
+                              </span>
+                            </div>
+                            {paymentData.refId3 && (
+                              <div className="flex justify-between mt-2">
+                                <span className="font-medium">Ref3</span>
+                                <span className="font-mono">
+                                  {paymentData.refId3}
+                                </span>
                               </div>
                             )}
                           </div>
-                        </div>
-                      </motion.div>
 
-                      {/* QR Code Section */}
-                      <div className="flex justify-center my-6">
-                        <div className="bg-white p-0 rounded-xl border-2 border-gray-200">
-                          <QRCodeDisplay
-                            base64Data={qrImageBase64}
-                            altText="สแกนเพื่อชำระเงิน"
-                            width={250}
-                            height={250}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Amount Section */}
-                      <div className="text-center mb-6">
-                        <p className="text-2xl font-bold text-green-600">
-                          {Number(paymentData.amount).toLocaleString("th-TH")}{" "}
-                          บาท
-                        </p>
-                      </div>
-
-                      {/* Reference Details */}
-                      <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <h4 className="font-bold mb-3 text-center text-gray-700 text-sm">
-                          รายละเอียดอ้างอิง
-                        </h4>
-                        <div className="space-y-2 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium text-gray-600">
-                              Ref1:
-                            </span>
-                            <span className="font-mono text-gray-800">
-                              {paymentData.refId1}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium text-gray-600">
-                              Ref2:
-                            </span>
-                            <span className="font-mono text-gray-800">
-                              {paymentData.refId2}
-                            </span>
-                          </div>
-                          {paymentData.refId3 && (
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium text-gray-600">
-                                Ref3:
-                              </span>
-                              <span className="font-mono text-gray-800">
-                                {paymentData.refId3}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="space-y-3">
-                        {/* {timeLeft > 0 && (
-                          <div className="flex gap-2">
+                          <div className="w-full flex gap-2 mt-3">
                             <button
-                              onClick={downloadQRSection}
-                              className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 text-sm hover:bg-green-700 transition-colors shadow-md"
-                            >
-                              <span className="material-symbols-outlined text-base">
-                                download
-                              </span>
-                              ดาวน์โหลด
-                            </button>
-
-                            <button
-                              onClick={handleCancelQr}
-                              className="px-4 bg-red-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 text-sm hover:bg-red-700 transition-colors shadow-md"
-                            >
-                              <span className="material-symbols-outlined text-base">
-                                cancel
-                              </span>
-                            </button>
-                          </div>
-                        )} */}
-
-                        {/* Check Payment Button */}
-                        {qrImageBase64 && (
-                          <div className="flex gap-2">
-                            <motion.button
-                              onClick={() =>
+                              onClick={() => {
                                 checkPaymentStatus(
                                   paymentData.refId1,
                                   paymentData.refId2,
                                   paymentData.refId3 || "",
                                   new Date().toISOString().split("T")[0],
-                                )
-                              }
-                              disabled={isLoadingConfirm}
-                              className={`flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 text-sm hover:bg-green-700 transition-colors shadow-md  ${
-                                isLoadingConfirm
-                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-md"
-                              }`}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.4 }}
+                                );
+                              }}
+                              className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium"
                             >
-                              {isLoadingConfirm ? (
-                                <>
-                                  <span className="animate-spin material-symbols-outlined text-base">
-                                    progress_activity
-                                  </span>
-                                  กำลังตรวจสอบ...
-                                </>
-                              ) : (
-                                <>
-                                  <span className="material-symbols-outlined text-base">
-                                    search
-                                  </span>
-                                  ตรวจสอบการชำระเงิน
-                                </>
-                              )}
-                            </motion.button>
+                              ตรวจสอบการชำระเงิน
+                            </button>
+
                             <button
                               onClick={handleCancelQr}
-                              className="px-4 bg-red-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 text-sm hover:bg-red-700 transition-colors shadow-md"
+                              className="py-2 px-3 bg-red-600 text-white rounded-lg font-medium"
                             >
-                              <span className="material-symbols-outlined text-base">
-                                cancel
-                              </span>
+                              ยกเลิก
                             </button>
                           </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                ) : paymentSuccessData ? (
-                  <motion.div
-                    key="payment-success"
-                    className="w-full mx-auto"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="bg-white p-6  border border-gray-100">
-                      {/* Success Header */}
-                      <div className="text-center mb-6">
-                        <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                          <span className="material-symbols-outlined text-white text-2xl">
-                            check_circle
-                          </span>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-1">
-                          ชำระเงินสำเร็จ!
-                        </h2>
-                        <p className="text-green-600 font-medium">
-                          การชำระเงินของคุณเสร็จสมบูรณ์
-                        </p>
-                      </div>
-
-                      {/* Amount Highlight */}
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200 text-center mb-6">
-                        <p className="text-sm text-gray-600 mb-1">
-                          จำนวนเงินที่ชำระ
-                        </p>
-                        <p className="text-3xl font-bold text-green-600">
-                          {Number(paymentSuccessData.amount).toLocaleString(
-                            "th-TH",
-                          )}{" "}
-                          บาท
-                        </p>
-                      </div>
-
-                      {/* Payment Details Card */}
-                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-6">
-                        <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                          <span className="material-symbols-outlined text-gray-600 text-lg">
-                            receipt_long
-                          </span>
-                          รายละเอียดการชำระเงิน
-                        </h3>
-
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              Transaction ID
-                            </span>
-                            <code className="font-mono text-sm bg-white px-2 py-1 rounded border border-gray-300 text-gray-800">
-                              {paymentSuccessData.transactionId}
-                            </code>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              ผู้ชำระ
-                            </span>
-                            <span className="text-sm text-gray-800">
-                              {paymentSuccessData.payerName || "ไม่ระบุ"}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              วันที่ชำระ
-                            </span>
-                            <span className="text-sm text-gray-800">
-                              {paymentSuccessData.transactionDateandTime
-                                ? new Date(
-                                    paymentSuccessData.transactionDateandTime,
-                                  ).toLocaleDateString("th-TH")
-                                : "-"}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              เวลา
-                            </span>
-                            <span className="text-sm text-gray-800">
-                              {paymentSuccessData.transactionDateandTime
-                                ? new Date(
-                                    paymentSuccessData.transactionDateandTime,
-                                  ).toLocaleTimeString("th-TH")
-                                : "-"}
-                            </span>
-                          </div>
+                      </motion.div>
+                    ) : paymentSuccessData ? (
+                      <motion.div
+                        key="modal-payment-success"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.18 }}
+                      >
+                        <div className="text-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            ชำระเงินสำเร็จ
+                          </h3>
                         </div>
-                      </div>
 
-                      {/* Reference Numbers */}
-                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 mb-6">
-                        <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                          <span className="material-symbols-outlined text-blue-600 text-lg">
-                            tag
-                          </span>
-                          เลขที่อ้างอิง
-                        </h3>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              Ref1
-                            </span>
-                            <code className="font-mono text-sm bg-white px-3 py-1 rounded-lg border border-blue-200 text-blue-700 font-medium">
-                              {paymentSuccessData.billPaymentRef1}
-                            </code>
-                          </div>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              Ref2
-                            </span>
-                            <code className="font-mono text-sm bg-white px-3 py-1 rounded-lg border border-purple-200 text-purple-700 font-medium">
-                              {paymentSuccessData.billPaymentRef2}
-                            </code>
-                          </div>
-
-                          {paymentSuccessData.billPaymentRef3 && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-gray-600">
-                                Ref3
+                        <div className="p-4 bg-white rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-600">จำนวน</p>
+                          <p className="text-2xl font-bold text-green-600">
+                            {Number(paymentSuccessData.amount).toLocaleString(
+                              "th-TH",
+                            )}{" "}
+                            บาท
+                          </p>
+                          <div className="mt-3 text-sm">
+                            <div className="flex justify-between">
+                              <span>Ref2</span>
+                              <span className="font-mono">
+                                {paymentSuccessData.billPaymentRef2}
                               </span>
-                              <code className="font-mono text-sm bg-white px-3 py-1 rounded-lg border border-indigo-200 text-indigo-700 font-medium">
-                                {paymentSuccessData.billPaymentRef3}
-                              </code>
                             </div>
-                          )}
+                            <div className="flex justify-between mt-1">
+                              <span>Transaction ID</span>
+                              <span className="font-mono">
+                                {paymentSuccessData.transactionId}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 mt-4">
+                            <button
+                              onClick={async () => {
+                                await exportReceipt({
+                                  shopName:
+                                    "คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่",
+                                  logoUrl: "/assets/images/logo.png",
+                                  transactionDate:
+                                    paymentSuccessData.transactionDateandTime ||
+                                    undefined,
+                                  refNumber:
+                                    paymentSuccessData.billPaymentRef2 ||
+                                    paymentSuccessData.transactionId ||
+                                    undefined,
+                                  amount: paymentSuccessData.amount as any,
+                                  paymentMethod: "SCB QR",
+                                });
+                              }}
+                              className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium"
+                            >
+                              ออกใบเสร็จ (PDF)
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setPaymentSuccessData(null);
+                                setShowQrModal(false);
+                                fetchData();
+                              }}
+                              className="py-2 px-3 bg-gray-200 rounded-lg"
+                            >
+                              ปิด
+                            </button>
+                          </div>
                         </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => {
-                            setPaymentSuccessData(null);
-                            fetchData();
-                            setPaymentData({
-                              amount: "",
-                              refId1: paymentData.refId1,
-                              refId2: "",
-                              refId3: "",
-                            });
-                          }}
-                          className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all hover:from-blue-600 hover:to-blue-700"
-                        >
-                          <span className="material-symbols-outlined text-lg">
-                            qr_code_scanner
-                          </span>
-                          สร้าง QR ใหม่
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            // ฟังก์ชันสำหรับดูใบเสร็จ
-                            console.log("View receipt");
-                          }}
-                          className="px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all hover:from-gray-600 hover:to-gray-700"
-                        >
-                          <span className="material-symbols-outlined text-lg">
-                            receipt_long
-                          </span>
-                        </button>
-                      </div>
-
-                      {/* Additional Info */}
-                      <div className="mt-4 text-center">
-                        <p className="text-xs text-gray-500">
-                          ขอบคุณที่ใช้บริการ
-                          <span className="font-medium text-gray-700">
-                            {" "}
-                            SCB QR Payment
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="qr-inactive"
-                    className="text-center text-gray-400 py-12 flex flex-col items-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
-                      <span className="material-symbols-outlined text-3xl text-blue-300">
-                        qr_code_2
-                      </span>
-                    </div>
-                    <p className="text-base font-medium mb-1">
-                      พร้อมสร้าง QR Code
-                    </p>
-                    <p className="text-xs">กรอกข้อมูลและกดสร้าง QR Code</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="modal-inactive"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <div className="text-center text-gray-500 py-8">
+                          <p className="font-medium">ยังไม่มี QR Code</p>
+                          <p className="text-xs">
+                            กรุณาสร้าง QR Code ก่อนเปิดการแสดง
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
-          </motion.div>
+          )}
 
           {/* Loading Indicator */}
           <AnimatePresence>
@@ -1766,7 +1833,7 @@ export default function QRCodePayment() {
 
             {/* Table Content */}
             <div className="overflow-x-auto bg-white">
-              <table className="w-full">
+              <table className="w-full table-auto min-w-[900px]">
                 <thead>
                   <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                     {[
@@ -1925,22 +1992,31 @@ export default function QRCodePayment() {
 
                           {/* Actions */}
                           <td className="px-5 py-4">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleRow(rowId);
-                              }}
-                              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                isExpanded
-                                  ? "bg-blue-100 text-blue-700 border-blue-300"
-                                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-base">
-                                {isExpanded ? "expand_less" : "info"}
-                              </span>
-                              {isExpanded ? "ซ่อน" : "ดูเพิ่มเติม"}
-                            </button>
+                            {canView ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRow(rowId);
+                                }}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                  isExpanded
+                                    ? "bg-blue-100 text-blue-700 border-blue-300"
+                                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                <span className="material-symbols-outlined text-base">
+                                  {isExpanded ? "expand_less" : "info"}
+                                </span>
+                                {isExpanded ? "ซ่อน" : "ดูเพิ่มเติม"}
+                              </button>
+                            ) : (
+                              <div className="text-xs text-gray-400 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-sm">
+                                  lock
+                                </span>
+                                ไม่มีสิทธิ์
+                              </div>
+                            )}
                           </td>
                         </tr>
 
@@ -2022,6 +2098,23 @@ export default function QRCodePayment() {
                                       </span>
                                       ประวัติ Void
                                     </h4>
+
+                                    {!canCreate ||
+                                    !canEdit ||
+                                    !canDelete ||
+                                    !canView ? (
+                                      <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 mb-3">
+                                        <p className="text-xs text-amber-800 flex items-start gap-2">
+                                          <span className="material-symbols-outlined text-sm mt-0.5 flex-shrink-0">
+                                            lock
+                                          </span>
+                                          <span>
+                                            ไม่มีสิทธิ์ใช้งานการคืนเงิน (Void)
+                                          </span>
+                                        </p>
+                                      </div>
+                                    ) : null}
+
                                     {item.ScbVoid && item.ScbVoid.length > 0 ? (
                                       <div className="space-y-2">
                                         {item.ScbVoid.map((v, vi) => (
@@ -2065,52 +2158,80 @@ export default function QRCodePayment() {
                                     )}
                                     {/* Void action — only shown when payment was confirmed */}
                                     {item.sendingBankCode && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (!voidedSuccess)
-                                            handleVoidPayment(item);
-                                        }}
-                                        disabled={
-                                          voidedSuccess ||
-                                          !!(
-                                            item.transactionId &&
-                                            loadingVoid[item.transactionId]
-                                          )
-                                        }
-                                        className={`mt-3 px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                                          voidedSuccess
-                                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                            : item.transactionId &&
-                                                loadingVoid[item.transactionId]
-                                              ? "bg-gray-400 text-white cursor-not-allowed"
-                                              : "bg-red-600 hover:bg-red-700 text-white shadow-sm"
-                                        }`}
-                                      >
-                                        {item.transactionId &&
-                                        loadingVoid[item.transactionId] ? (
-                                          <>
-                                            <span className="animate-spin material-symbols-outlined text-sm">
-                                              progress_activity
-                                            </span>
-                                            กำลังประมวลผล...
-                                          </>
-                                        ) : voidedSuccess ? (
-                                          <>
-                                            <span className="material-symbols-outlined text-sm">
-                                              undo
-                                            </span>
-                                            Void สำเร็จแล้ว
-                                          </>
-                                        ) : (
-                                          <>
-                                            <span className="material-symbols-outlined text-sm">
-                                              cancel
-                                            </span>
-                                            คืนเงิน (Void)
-                                          </>
-                                        )}
-                                      </button>
+                                      <div className="flex flex-col gap-2 mt-3">
+                                        {/* Generate Receipt PDF Button */}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleGenerateReceipt(item);
+                                          }}
+                                          className="px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                        >
+                                          <span className="material-symbols-outlined text-sm">
+                                            receipt_long
+                                          </span>
+                                          ออกใบเสร็จ PDF
+                                        </button>
+
+                                        {/* Void Payment Button */}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (!voidedSuccess)
+                                              handleVoidPayment(item);
+                                          }}
+                                          disabled={
+                                            voidedSuccess ||
+                                            !!(
+                                              item.transactionId &&
+                                              loadingVoid[item.transactionId]
+                                            ) ||
+                                            !canCreate ||
+                                            !canEdit ||
+                                            !canDelete ||
+                                            !canView
+                                          }
+                                          className={`px-4 py-2 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                                            !canCreate ||
+                                            !canEdit ||
+                                            !canDelete ||
+                                            !canView
+                                              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                              : voidedSuccess
+                                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                : item.transactionId &&
+                                                    loadingVoid[
+                                                      item.transactionId
+                                                    ]
+                                                  ? "bg-gray-400 text-white cursor-not-allowed"
+                                                  : "bg-red-600 hover:bg-red-700 text-white shadow-sm"
+                                          }`}
+                                        >
+                                          {item.transactionId &&
+                                          loadingVoid[item.transactionId] ? (
+                                            <>
+                                              <span className="animate-spin material-symbols-outlined text-sm">
+                                                progress_activity
+                                              </span>
+                                              กำลังประมวลผล...
+                                            </>
+                                          ) : voidedSuccess ? (
+                                            <>
+                                              <span className="material-symbols-outlined text-sm">
+                                                undo
+                                              </span>
+                                              Void สำเร็จแล้ว
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span className="material-symbols-outlined text-sm">
+                                                cancel
+                                              </span>
+                                              คืนเงิน (Void)
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
                                     )}
                                   </div>
                                 </div>

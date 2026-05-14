@@ -56,3 +56,6 @@ ecosystem.config.js
 /config.js
 **/config.js
 
+#docs
+/docs/
+**/docs/
