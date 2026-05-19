@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useState,
@@ -11,7 +11,6 @@ import {
   useMemo,
 } from "react";
 import html2canvas from "html2canvas";
-import { useVisitor } from "@/lib/fingerprintjs-shim";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { toast } from "react-toastify";
@@ -22,17 +21,13 @@ import {
 } from "@/app/routers/SCB/PostRouter";
 import QRCodeDisplay from "@/components/QRCodeDisplay";
 import {
-  exportReceipt,
   generateReceiptPDF,
   numberToThaiWords,
   numberToEnglishWords,
   type ReceiptData,
 } from "@/app/lib/pdfGenerator";
 import { GetScbData, GetScbInquiry } from "@/app/routers/SCB/GetRouter";
-import {
-  generateCustomCode20,
-  generateRandomDigits,
-} from "@/app/lib/generators/codeGenerator";
+import { generateCustomCode20 } from "@/app/lib/generators/codeGenerator";
 
 import { useScbWebSocket } from "@/app/hooks/useSocket";
 import { usePermission } from "@/app/context/UsePermission";
@@ -117,6 +112,13 @@ export default function QRCodePayment() {
     useState<PaymentSuccessData | null>(null);
   const [showQrGenerator, setShowQrGenerator] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  // Snapshot of paymentData at the moment QR was generated — preserved while modal is open
+  const [activeQrData, setActiveQrData] = useState<{
+    amount: string;
+    refId1: string;
+    refId2: string;
+    refId3: string;
+  } | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -304,10 +306,25 @@ export default function QRCodePayment() {
         return;
       }
 
+      // Snapshot before clearing the form so the modal can display correct values
+      setActiveQrData({
+        amount: paymentData.amount,
+        refId1: paymentData.refId1.trim(),
+        refId2: paymentData.refId2.trim(),
+        refId3: paymentData.refId3?.trim() || "",
+      });
       setQrImageBase64(qrImage);
       setExpiryTime(Date.now() + 10 * 60 * 1000); // 10 นาที
       setIsQrActive(true);
       toast.success("สร้าง QR Code สำเร็จ!");
+      setShowQrModal(true);
+      setShowQrGenerator(false);
+      setPaymentData({
+        amount: "",
+        refId1: "",
+        refId2: "",
+        refId3: "",
+      });
 
       // ✅ เริ่ม client-side polling ทันที
       // setIsChecking(true);
@@ -345,6 +362,7 @@ export default function QRCodePayment() {
     setExpiryTime(null);
     setIsQrActive(false);
     setPaymentSuccessData(null);
+    setActiveQrData(null);
 
     disconnect(); // ✅ ปิด WebSocket
   };
@@ -469,23 +487,28 @@ export default function QRCodePayment() {
   };
 
   const generateRandomRef2 = (ref1: string): string => {
-    const trimmedRef1 = ref1.trim();
+    const trimmedRef1 = ref1.trim().toUpperCase();
 
     if (!trimmedRef1) {
       toast.warn("กรุณากรอก Ref1 ก่อนสุ่ม Ref2");
       return "";
     }
 
-    if (trimmedRef1.length > 20) {
-      toast.warn("Ref1 ต้องไม่เกิน 20 ตัวอักษร");
+    if (trimmedRef1.length > 8) {
+      toast.warn("Ref1 ต้องไม่เกิน 8 ตัวอักษร");
       return "";
     }
 
-    const remainingLength = 20 - trimmedRef1.length;
-    const randomSuffix =
-      remainingLength > 0 ? generateRandomDigits(remainingLength) : "";
+    const now = new Date();
+    const yy = String(now.getFullYear() % 100).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+    const timeSuffix = `${yy}${mm}${dd}${hh}${mi}${ss}`; // 12 ตัว เช่น 260515165959
 
-    return trimmedRef1 + randomSuffix;
+    return trimmedRef1 + timeSuffix;
   };
 
   const generateRandomRef3 = (): string => {
@@ -644,12 +667,33 @@ export default function QRCodePayment() {
 
     // Format date as Thai Buddhist Era: "12 พฤษภาคม 2569/ 12 MAY 2026"
     const thMonths = [
-      "มกราคม","กุมภาพันธ์","มีนาคม","เมษายน",
-      "พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม",
-      "กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม",
+      "มกราคม",
+      "กุมภาพันธ์",
+      "มีนาคม",
+      "เมษายน",
+      "พฤษภาคม",
+      "มิถุนายน",
+      "กรกฎาคม",
+      "สิงหาคม",
+      "กันยายน",
+      "ตุลาคม",
+      "พฤศจิกายน",
+      "ธันวาคม",
     ];
-    const enMonths = ["JAN","FEB","MAR","APR","MAY","JUN",
-      "JUL","AUG","SEP","OCT","NOV","DEC"];
+    const enMonths = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
     const m = txDate.getMonth();
     const txDateStr = `${txDate.getDate()} ${thMonths[m]} ${txDate.getFullYear() + 543}/ ${txDate.getDate()} ${enMonths[m]} ${txDate.getFullYear()}`;
 
@@ -657,16 +701,16 @@ export default function QRCodePayment() {
       item.transactionId || item.billPaymentRef2 || `TX-${Date.now()}`;
 
     const receiptData: ReceiptData = {
-      docNumber:       docNumber.substring(0, 20),
-      date:            txDateStr,
-      customerName:    item.payerName || "ผู้ชำระเงินผ่าน SCB QR",
+      docNumber: docNumber.substring(0, 20),
+      date: txDateStr,
+      customerName: item.payerName || "ผู้ชำระเงินผ่าน SCB QR",
       customerAddress: "ศูนย์บริหารการเงิน คณะสัตวแพทยศาสตร์",
-      customerTaxId:   "-",
-      description:     `ค่าใช้สอยคณะสัตวแพทยศาสตร์ (REF: ${item.billPaymentRef2 || "-"})`,
-      totalPrice:      amount,
-      amountInWords:   numberToThaiWords(amount),
+      customerTaxId: "-",
+      description: `ค่าใช้สอยคณะสัตวแพทยศาสตร์ (REF: ${item.billPaymentRef2 || "-"})`,
+      totalPrice: amount,
+      amountInWords: numberToThaiWords(amount),
       amountInWordsEN: numberToEnglishWords(amount),
-      vatRate:         0, // VAT-exempt
+      vatRate: 0, // VAT-exempt
     };
 
     try {
@@ -1015,7 +1059,7 @@ export default function QRCodePayment() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 flex flex-col  p-4">
       <div className=" w-full mx-auto">
         <motion.div
           className="h-full"
@@ -1023,325 +1067,326 @@ export default function QRCodePayment() {
           initial="hidden"
           animate="visible"
         >
-          {/* Toggle to show/hide QR generator (collapsed by default) */}
-          <div className="flex justify-end mb-6">
-            <button
-              onClick={() => setShowQrGenerator((p) => !p)}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium shadow-sm hover:from-blue-700 hover:to-purple-700 transition-colors"
-            >
-              {showQrGenerator
-                ? "ซ่อน สร้าง QR Code"
-                : "สร้าง QR Code ชำระเงิน"}
-            </button>
-          </div>
           {/* Main Card */}
           {showQrGenerator && (
-            <motion.div
-              className="bg-white shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-white/20 "
-              variants={cardVariants}
-            >
-              {/* Left Panel - Form Input */}
-              <div className="w-full lg:w-1/2 p-8 lg:p-10">
-                <div className="flex flex-col w-full gap-6">
-                  {/* Header */}
-                  <motion.div
-                    className="text-center"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-4">
-                      <span className="material-symbols-outlined text-white text-3xl">
-                        qr_code_scanner
-                      </span>
-                    </div>
-                    <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                      สร้าง QR Code การชำระเงิน
-                    </h1>
-                    <p className="text-sm text-gray-600 mt-2 font-medium">
-                      คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่
-                    </p>
-                  </motion.div>
-
-                  {/* Permission Alert - Create */}
-                  {!canCreate && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/95 ">
+              <motion.div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative overflow-y-auto">
+                <button
+                  onClick={() => {
+                    setShowQrGenerator(false);
+                    setPaymentData({
+                      amount: "",
+                      refId1: "",
+                      refId2: "",
+                      refId3: "",
+                    });
+                  }}
+                  aria-label="Close"
+                  className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                >
+                  &times;
+                </button>
+                {/* Left Panel - Form Input */}
+                <div className="w-full p-5">
+                  <div className="flex flex-col w-full gap-6">
+                    {/* Header */}
                     <motion.div
+                      className="text-center"
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3"
+                      transition={{ delay: 0.1 }}
                     >
-                      <span className="material-symbols-outlined text-amber-600 text-lg mt-0.5 flex-shrink-0">
-                        lock
-                      </span>
-                      <div className="text-sm text-amber-800">
-                        <p className="font-semibold">
-                          ไม่มีสิทธิ์สร้าง QR Code
-                        </p>
-                        <p className="text-amber-700 text-xs mt-1">
-                          กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์การสร้าง QR Code
-                        </p>
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg mb-4">
+                        <span className="material-symbols-outlined text-white text-3xl">
+                          qr_code_scanner
+                        </span>
                       </div>
-                    </motion.div>
-                  )}
 
-                  {/* Form Fields */}
-                  <div className="flex flex-col gap-5">
-                    {/* Amount Field */}
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="flex flex-col gap-2"
-                    >
-                      <label className="text-gray-700 font-medium flex flex-col items-start gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-blue-500 text-lg">
-                            payments
-                          </span>
-                          จำนวนเงิน (บาท)
-                          <span className="text-red-500 font-bold">*</span>
+                      <p className="text-sm text-gray-600 mt-2 font-medium">
+                        คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่
+                      </p>
+                    </motion.div>
+
+                    {/* Permission Alert - Create */}
+                    {!canCreate && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3"
+                      >
+                        <span className="material-symbols-outlined text-amber-600 text-lg mt-0.5 flex-shrink-0">
+                          lock
+                        </span>
+                        <div className="text-sm text-amber-800">
+                          <p className="font-semibold">
+                            ไม่มีสิทธิ์สร้าง QR Code
+                          </p>
+                          <p className="text-amber-700 text-xs mt-1">
+                            กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์การสร้าง QR Code
+                          </p>
                         </div>
-
-                        <span className="text-[12px] text-gray-500">
-                          ระบุจำนวนเงินตั้งแต่ 1-9999.99 บาท
-                        </span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          name="amount"
-                          placeholder="0.00"
-                          value={paymentData.amount}
-                          onChange={handleChange}
-                          onBlur={handleBlur}
-                          disabled={isQrActive || !canCreate}
-                          className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                          attach_money
-                        </span>
-                      </div>
-                    </motion.div>
-
-                    {/* Ref Fields */}
-                    {/* Ref1 */}
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                      className="flex flex-col gap-2"
-                    >
-                      <label className="text-gray-700 font-medium flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-500 text-lg">
-                          tag
-                        </span>
-                        Ref1 - รหัสประเภท
-                        <span className="text-red-500 font-bold">*</span>
-                        <span className="text-[11px] text-gray-500 font-normal">
-                          (สูงสุด 8 ตัวอักษร)
-                        </span>
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="refId1"
-                          placeholder="เช่น: STUD"
-                          value={paymentData.refId1 || ""}
-                          onChange={handleChange}
-                          disabled={isQrActive || !canCreate}
-                          maxLength={8}
-                          className="w-full p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                          123
-                        </span>
-                      </div>
-                    </motion.div>
-
-                    {/* Ref2 */}
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                      className="flex flex-col gap-2"
-                    >
-                      <label className="text-gray-700 font-medium flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-500 text-lg">
-                          tag
-                        </span>
-                        Ref2 - อ้างอิงลำดับ
-                        <span className="text-red-500 font-bold">*</span>
-                        <span className="text-[11px] text-gray-500 font-normal">
-                          (สูงสุด 20 ตัวอักษร)
-                        </span>
-                      </label>
-                      <div className="relative flex gap-2">
-                        <input
-                          type="text"
-                          name="refId2"
-                          placeholder="เช่น: STUD00001"
-                          value={paymentData.refId2 || ""}
-                          onChange={handleChange}
-                          disabled={isQrActive || !canCreate}
-                          maxLength={20}
-                          className="flex-1 p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                          123
-                        </span>
-                        <motion.button
-                          type="button"
-                          disabled={isQrActive || !canCreate}
-                          onClick={() => {
-                            setPaymentData((prev) => ({
-                              ...prev,
-                              refId2: generateRandomRef2(prev.refId1),
-                            }));
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-4 bg-gradient-to-r  from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="สร้างอ้างอิง"
-                        >
-                          <span className="material-symbols-outlined text-sm">
-                            autorenew
-                          </span>
-                        </motion.button>
-                      </div>
-                    </motion.div>
-
-                    {/* Ref3 */}
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 }}
-                      className="flex flex-col gap-2"
-                    >
-                      <label className="text-gray-700 font-medium flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-500 text-lg">
-                          tag
-                        </span>
-                        Ref3 - อ้างอิงเพิ่มเติม
-                        <span className="text-[11px] text-gray-500 font-normal">
-                          (เลือกได้ สูงสุด 20 ตัวอักษร)
-                        </span>
-                      </label>
-                      <div className="relative flex gap-2">
-                        <input
-                          type="text"
-                          name="refId3"
-                          placeholder="เลือกได้"
-                          value={paymentData.refId3 || ""}
-                          onChange={handleChange}
-                          disabled={isQrActive || !canCreate}
-                          maxLength={20}
-                          className="flex-1 uppercase p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                          123
-                        </span>
-                        <motion.button
-                          type="button"
-                          disabled={isQrActive || !canCreate}
-                          onClick={() => {
-                            setPaymentData((prev) => ({
-                              ...prev,
-                              refId3: generateRandomRef3(),
-                            }));
-                          }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="สร้างอ้างอิง"
-                        >
-                          <span className="material-symbols-outlined text-sm">
-                            autorenew
-                          </span>
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  {/* Generate QR Button */}
-                  <motion.button
-                    onClick={generateQRCode}
-                    disabled={isQrActive || isLoading || !canCreate}
-                    className="py-4 px-6 text-lg font-semibold rounded-xl transition-all duration-300 ease-in-out shadow-lg flex items-center justify-center gap-3 mt-4 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                    whileHover={
-                      !isQrActive && !isLoading && canCreate
-                        ? { scale: 1.02, y: -2 }
-                        : {}
-                    }
-                    whileTap={
-                      !isQrActive && !isLoading && canCreate
-                        ? { scale: 0.98 }
-                        : {}
-                    }
-                  >
-                    {isLoading ? (
-                      <>
-                        <motion.span
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            duration: 1,
-                            repeat: Infinity,
-                            ease: "linear",
-                          }}
-                          className="material-symbols-outlined"
-                        >
-                          progress_activity
-                        </motion.span>
-                        กำลังสร้าง QR Code...
-                      </>
-                    ) : isQrActive ? (
-                      <>
-                        <span className="material-symbols-outlined">
-                          qr_code_2
-                        </span>
-                        QR Code กำลังใช้งาน
-                      </>
-                    ) : !canCreate ? (
-                      <>
-                        <span className="material-symbols-outlined">lock</span>
-                        ไม่มีสิทธิ์
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined">
-                          qr_code_2
-                        </span>
-                        สร้าง QR Code
-                      </>
+                      </motion.div>
                     )}
-                  </motion.button>
-                  <button
+
+                    {/* Form Fields */}
+                    <div className="flex flex-col gap-5">
+                      {/* Amount Field */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="flex flex-col gap-2"
+                      >
+                        <label className="text-gray-700 font-medium flex flex-col items-start gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-blue-500 text-lg">
+                              payments
+                            </span>
+                            จำนวนเงิน (บาท)
+                            <span className="text-red-500 font-bold">*</span>
+                          </div>
+
+                          <span className="text-[12px] text-gray-500">
+                            ระบุจำนวนเงินตั้งแต่ 1-9999.99 บาท
+                          </span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            name="amount"
+                            placeholder="0.00"
+                            value={paymentData.amount}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            disabled={isQrActive || !canCreate}
+                            className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            attach_money
+                          </span>
+                        </div>
+                      </motion.div>
+
+                      {/* Ref Fields */}
+                      {/* Ref1 */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="flex flex-col gap-2"
+                      >
+                        <label className="text-gray-700 font-medium flex items-center gap-2">
+                          <span className="material-symbols-outlined text-blue-500 text-lg">
+                            tag
+                          </span>
+                          Ref1 - รหัสประเภท
+                          <span className="text-red-500 font-bold">*</span>
+                          <span className="text-[11px] text-gray-500 font-normal">
+                            (สูงสุด 8 ตัวอักษร)
+                          </span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            name="refId1"
+                            placeholder="เช่น: STUD"
+                            value={paymentData.refId1 || ""}
+                            onChange={handleChange}
+                            disabled={isQrActive || !canCreate}
+                            maxLength={8}
+                            className="w-full p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            123
+                          </span>
+                        </div>
+                      </motion.div>
+
+                      {/* Ref2 */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="flex flex-col gap-2"
+                      >
+                        <label className="text-gray-700 font-medium flex items-center gap-2">
+                          <span className="material-symbols-outlined text-blue-500 text-lg">
+                            tag
+                          </span>
+                          Ref2 - อ้างอิงลำดับ
+                          <span className="text-red-500 font-bold">*</span>
+                          <span className="text-[11px] text-gray-500 font-normal">
+                            (สูงสุด 20 ตัวอักษร)
+                          </span>
+                        </label>
+                        <div className="relative flex gap-2">
+                          <input
+                            type="text"
+                            name="refId2"
+                            placeholder="เช่น: STUD00001"
+                            value={paymentData.refId2 || ""}
+                            onChange={handleChange}
+                            disabled={isQrActive || !canCreate}
+                            maxLength={20}
+                            className="flex-1 p-4 pl-12 uppercase border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            123
+                          </span>
+                          <motion.button
+                            type="button"
+                            disabled={isQrActive || !canCreate}
+                            onClick={() => {
+                              setPaymentData((prev) => ({
+                                ...prev,
+                                refId2: generateRandomRef2(prev.refId1),
+                              }));
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-4 bg-gradient-to-r  from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="สร้างอ้างอิง"
+                          >
+                            <span className="material-symbols-outlined text-sm">
+                              autorenew
+                            </span>
+                          </motion.button>
+                        </div>
+                      </motion.div>
+
+                      {/* Ref3 */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="flex flex-col gap-2"
+                      >
+                        <label className="text-gray-700 font-medium flex items-center gap-2">
+                          <span className="material-symbols-outlined text-blue-500 text-lg">
+                            tag
+                          </span>
+                          Ref3 - อ้างอิงเพิ่มเติม
+                          <span className="text-[11px] text-gray-500 font-normal">
+                            (เลือกได้ สูงสุด 20 ตัวอักษร)
+                          </span>
+                        </label>
+                        <div className="relative flex gap-2">
+                          <input
+                            type="text"
+                            name="refId3"
+                            placeholder="เลือกได้"
+                            value={paymentData.refId3 || ""}
+                            onChange={handleChange}
+                            disabled={isQrActive || !canCreate}
+                            maxLength={20}
+                            className="flex-1 uppercase p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white/50  transition-all duration-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          />
+
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            123
+                          </span>
+                          <motion.button
+                            type="button"
+                            disabled={isQrActive || !canCreate}
+                            onClick={() => {
+                              setPaymentData((prev) => ({
+                                ...prev,
+                                refId3: generateRandomRef3(),
+                              }));
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="สร้างอ้างอิง"
+                          >
+                            <span className="material-symbols-outlined text-sm">
+                              autorenew
+                            </span>
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    </div>
+
+                    {/* Generate QR Button */}
+                    <motion.button
+                      onClick={generateQRCode}
+                      disabled={isQrActive || isLoading || !canCreate}
+                      className="py-4 px-6 text-lg font-semibold rounded-xl transition-all duration-300 ease-in-out shadow-lg flex items-center justify-center gap-3 mt-4 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                      whileHover={
+                        !isQrActive && !isLoading && canCreate
+                          ? { scale: 1.02, y: -2 }
+                          : {}
+                      }
+                      whileTap={
+                        !isQrActive && !isLoading && canCreate
+                          ? { scale: 0.98 }
+                          : {}
+                      }
+                    >
+                      {isLoading ? (
+                        <>
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                            className="material-symbols-outlined"
+                          >
+                            progress_activity
+                          </motion.span>
+                          กำลังสร้าง QR Code...
+                        </>
+                      ) : isQrActive ? (
+                        <>
+                          <span className="material-symbols-outlined">
+                            qr_code_2
+                          </span>
+                          QR Code กำลังใช้งาน
+                        </>
+                      ) : !canCreate ? (
+                        <>
+                          <span className="material-symbols-outlined">
+                            lock
+                          </span>
+                          ไม่มีสิทธิ์
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined">
+                            qr_code_2
+                          </span>
+                          สร้าง QR Code
+                        </>
+                      )}
+                    </motion.button>
+                    {/* <button
                     onClick={handleTestPush}
                     className="mt-2 px-4 py-2 bg-blue-600 text-white rounded mr-2"
                   >
                     Send Test Payload
-                  </button>
-                  {qrImageBase64 && (
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setShowQrModal(true)}
-                        className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md hover:bg-indigo-700 transition-colors"
-                      >
-                        <span className="material-symbols-outlined">
-                          qr_code_scanner
-                        </span>
-                        ชำระเงินผ่าน QR Code
-                      </button>
-                    </div>
-                  )}
+                  </button> */}
+                    {qrImageBase64 && (
+                      <div className="mt-4">
+                        <button
+                          onClick={() => setShowQrModal(true)}
+                          className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-md hover:bg-indigo-700 transition-colors"
+                        >
+                          <span className="material-symbols-outlined">
+                            qr_code_scanner
+                          </span>
+                          ชำระเงินผ่าน QR Code
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              {/* QR display moved to modal (opens when user clicks "ชำระเงินผ่าน QR Code") */}
-            </motion.div>
+              </motion.div>
+            </div>
           )}
 
           {/* QR Modal */}
@@ -1349,7 +1394,10 @@ export default function QRCodePayment() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
               <div className="bg-white rounded-2xl shadow-xl w-full max-w-md relative overflow-y-auto">
                 <button
-                  onClick={() => setShowQrModal(false)}
+                  onClick={() => {
+                    setShowQrModal(false);
+                    setShowQrGenerator(false);
+                  }}
                   aria-label="Close"
                   className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
                 >
@@ -1384,9 +1432,11 @@ export default function QRCodePayment() {
 
                           <div className="text-center">
                             <p className="text-2xl font-bold text-green-600">
-                              {Number(paymentData.amount).toLocaleString(
-                                "th-TH",
-                              )}{" "}
+                              {Number(
+                                activeQrData?.amount ?? "0",
+                              ).toLocaleString("th-TH", {
+                                minimumFractionDigits: 2,
+                              })}{" "}
                               บาท
                             </p>
                           </div>
@@ -1395,20 +1445,20 @@ export default function QRCodePayment() {
                             <div className="flex justify-between">
                               <span className="font-medium">Ref1</span>
                               <span className="font-mono">
-                                {paymentData.refId1}
+                                {activeQrData?.refId1 ?? "-"}
                               </span>
                             </div>
                             <div className="flex justify-between mt-2">
                               <span className="font-medium">Ref2</span>
                               <span className="font-mono">
-                                {paymentData.refId2}
+                                {activeQrData?.refId2 ?? "-"}
                               </span>
                             </div>
-                            {paymentData.refId3 && (
+                            {activeQrData?.refId3 && (
                               <div className="flex justify-between mt-2">
                                 <span className="font-medium">Ref3</span>
                                 <span className="font-mono">
-                                  {paymentData.refId3}
+                                  {activeQrData.refId3}
                                 </span>
                               </div>
                             )}
@@ -1418,9 +1468,9 @@ export default function QRCodePayment() {
                             <button
                               onClick={() => {
                                 checkPaymentStatus(
-                                  paymentData.refId1,
-                                  paymentData.refId2,
-                                  paymentData.refId3 || "",
+                                  activeQrData?.refId1 ?? "",
+                                  activeQrData?.refId2 ?? "",
+                                  activeQrData?.refId3 ?? "",
                                   new Date().toISOString().split("T")[0],
                                 );
                               }}
@@ -1478,19 +1528,29 @@ export default function QRCodePayment() {
                           <div className="flex gap-2 mt-4">
                             <button
                               onClick={async () => {
-                                await exportReceipt({
-                                  shopName:
-                                    "คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่",
-                                  logoUrl: "/assets/images/logo.png",
-                                  transactionDate:
-                                    paymentSuccessData.transactionDateandTime ||
-                                    undefined,
-                                  refNumber:
-                                    paymentSuccessData.billPaymentRef2 ||
-                                    paymentSuccessData.transactionId ||
-                                    undefined,
-                                  amount: paymentSuccessData.amount as any,
-                                  paymentMethod: "SCB QR",
+                                await handleGenerateReceipt({
+                                  scbId: paymentSuccessData.transactionId ?? "",
+                                  reverseFlag: null,
+                                  payerName:
+                                    paymentSuccessData.payerName ?? null,
+                                  amount: String(
+                                    paymentSuccessData.amount ?? "0",
+                                  ),
+                                  transactionDateandTime:
+                                    paymentSuccessData.transactionDateandTime ??
+                                    "",
+                                  billPaymentRef1:
+                                    paymentSuccessData.billPaymentRef1 ?? null,
+                                  billPaymentRef2:
+                                    paymentSuccessData.billPaymentRef2 ?? null,
+                                  billPaymentRef3:
+                                    paymentSuccessData.billPaymentRef3 ?? null,
+                                  createdAt:
+                                    paymentSuccessData.transactionDateandTime ??
+                                    new Date().toISOString(),
+                                  transactionId:
+                                    paymentSuccessData.transactionId ?? null,
+                                  ScbVoid: [],
                                 });
                               }}
                               className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium"
@@ -1576,7 +1636,6 @@ export default function QRCodePayment() {
           </AnimatePresence>
 
           {/* SCB Transactions */}
-
           <motion.div
             className="mt-8 bg-white/90 rounded-3xl shadow-xl border border-white/20 overflow-hidden"
             initial={{ opacity: 0, y: 20 }}
@@ -1676,8 +1735,11 @@ export default function QRCodePayment() {
 
                   <motion.button
                     onClick={() => setShowQrGenerator((p) => !p)}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium shadow-sm hover:from-blue-700 hover:to-purple-700 transition-colors"
+                    className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
                   >
+                    <span className="material-symbols-outlined text-base">
+                      qr_code_2
+                    </span>
                     {showQrGenerator ? "Hide QR Code" : "QR Code Payment"}
                   </motion.button>
                 </div>
@@ -2170,7 +2232,7 @@ export default function QRCodePayment() {
                                           <span className="material-symbols-outlined text-sm">
                                             receipt_long
                                           </span>
-                                          ออกใบเสร็จ PDF
+                                          ออกใบเสร็จ PDF 2
                                         </button>
 
                                         {/* Void Payment Button */}

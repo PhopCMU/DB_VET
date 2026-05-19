@@ -38,6 +38,9 @@ export const generateRandom10Digits = (): string => {
   const num = array[0] % 10_000_000_000; // 0–9,999,999,999
   return num.toString().padStart(10, "0"); // ✅ 10 หลัก
 };
+
+//
+
 // 2. สร้างโค้ดแบบยืดหยุ่น
 export const generateCode = ({
   prefix = "",
