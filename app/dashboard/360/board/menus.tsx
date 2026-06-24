@@ -23,6 +23,12 @@ export const Tabsfaculty = [
     icon: "school",
     color: "gray",
   },
+  {
+    key: "นักวิจัย (กลาง)",
+    label: "นักวิจัย (กลาง)",
+    icon: "school",
+    color: "gray",
+  },
 ];
 
 export const TabsOffice = [
@@ -384,6 +390,12 @@ export const TabsVphcap = [
 ];
 
 export const TabsSanbox = [
+  {
+    key: "สัตวแพทย์ (ชำนาญการพิเศษ)",
+    label: "สัตวแพทย์ (ชำนาญการพิเศษ)",
+    icon: "health_and_safety",
+    color: "gray",
+  },
   {
     key: "สัตวแพทย์",
     label: "สัตวแพทย์",

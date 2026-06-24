@@ -52,9 +52,9 @@ export default function Page() {
         return Tabsfaculty;
       case "3":
         return TabsHIS;
-      case "4":
-        //   return TabsVphcap;
-        // case "5":
+      // case "4":
+      //   return TabsVphcap;
+      case "5":
         return TabsSanbox;
       default:
         return Tabsfaculty;
