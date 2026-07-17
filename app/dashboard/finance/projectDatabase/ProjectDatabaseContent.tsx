@@ -43,7 +43,7 @@ export default function RegisterProjectDatabasePage() {
   const [database, setDatabase] = useState<string | null>(module);
   const [projectId, setProjectId] = useState<string | null>(project);
   const [matchedProject, setMatchedProject] = useState<ProjectModel | null>(
-    null
+    null,
   );
 
   // หา project ที่ตรงกับ projectId + database (super admin ไม่ต้องตรวจสอบ permission)
@@ -64,7 +64,7 @@ export default function RegisterProjectDatabasePage() {
           (perm: any) =>
             perm.userId === userData.userId &&
             perm.submenuId === submenuIdFinance &&
-            perm.view === true
+            perm.view === true,
         )
       );
     });
@@ -87,7 +87,7 @@ export default function RegisterProjectDatabasePage() {
           (perm: any) =>
             perm.userId === userData?.userId &&
             perm.submenuId === submenuIdFinance &&
-            perm.view === true
+            perm.view === true,
         )
       );
     });
@@ -140,8 +140,8 @@ export default function RegisterProjectDatabasePage() {
               (perm: any) =>
                 perm.userId === userData?.userId &&
                 perm.submenuId === submenuIdFinance &&
-                perm.view === true
-            )
+                perm.view === true,
+            ),
           );
         }
 
@@ -165,7 +165,7 @@ export default function RegisterProjectDatabasePage() {
     const results = projectData.filter(
       (project) =>
         project.name.toLowerCase().includes(text.toLowerCase()) ||
-        project.description.toLowerCase().includes(text.toLowerCase())
+        project.description.toLowerCase().includes(text.toLowerCase()),
     );
     setFilteredProjects(results);
     setCurrentPage(1);
@@ -179,13 +179,13 @@ export default function RegisterProjectDatabasePage() {
   const indexOfFirstProject = indexOfLastProject - projectsPerPage;
   const currentProjects = displayProjects.slice(
     indexOfFirstProject,
-    indexOfLastProject
+    indexOfLastProject,
   );
 
   // เปลี่ยนไปยังโครงการ
   const handleRouter = (project: ProjectModel) => {
     router.push(
-      `/dashboard/finance/projectDatabase?Project=${project.projectId}&Module=${project.database}`
+      `/dashboard/finance/projectDatabase?Project=${project.projectId}&Module=${project.database}`,
     );
   };
 
@@ -285,8 +285,8 @@ export default function RegisterProjectDatabasePage() {
 
   if (loading)
     return (
-      <>
-        <div className="relative w-5 h-5">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="relative  w-5 h-5">
           <div className="w-5 h-5 border-2 border-gray-200 rounded-full"></div>
           <div className="absolute top-0 left-0 w-5 h-5 border-2 border-t-[#325e8c] border-transparent rounded-full animate-spin"></div>
         </div>
@@ -297,7 +297,7 @@ export default function RegisterProjectDatabasePage() {
         >
           กำลังโหลด...
         </motion.span>
-      </>
+      </div>
     );
 
   // ถ้าไม่มีโครงการเลย (แม้จะไม่ใช่ super admin ก็ตาม)
@@ -573,7 +573,7 @@ export default function RegisterProjectDatabasePage() {
           totalPages - 3,
           totalPages - 2,
           totalPages - 1,
-          totalPages
+          totalPages,
         );
       } else {
         pageNumbers.push(
@@ -583,7 +583,7 @@ export default function RegisterProjectDatabasePage() {
           currentPage,
           currentPage + 1,
           ellipsis,
-          totalPages
+          totalPages,
         );
       }
     }
@@ -607,8 +607,8 @@ export default function RegisterProjectDatabasePage() {
               number === currentPage
                 ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md"
                 : number === ellipsis
-                ? "bg-transparent text-gray-400 cursor-default"
-                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  ? "bg-transparent text-gray-400 cursor-default"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
             }`}
             disabled={number === ellipsis}
           >

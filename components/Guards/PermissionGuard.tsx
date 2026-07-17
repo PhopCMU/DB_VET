@@ -33,7 +33,7 @@ export default function PermissionGuard({
         hasPermission = true;
       } else if (userData?.UserPermission) {
         hasPermission = userData.UserPermission.some(
-          (p: any) => p.submenuId === submenuIdCode
+          (p: any) => p.submenuId === submenuIdCode,
         );
       }
 
@@ -61,10 +61,10 @@ export default function PermissionGuard({
     redirected,
   ]);
 
-  // ระหว่างรอ → แสดง loading
+  // ระหว่างรอ → แสดง loading (fixed เต็มจอเพื่อไม่ให้เนื้อหาอื่นแสดงซ้อนใต้ loading นี้)
   if (!checked) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100 p-4">
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-100 p-4">
         <div className="text-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/60">
           {/* Spinner ที่ทันสมัยด้วยการ animate */}
           <div className="relative inline-flex items-center justify-center mb-6">

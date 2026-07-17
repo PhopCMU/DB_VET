@@ -13,6 +13,12 @@
 # testing
 /coverage
 
+# Test files: keep local test files out of Git (per request)
+tests/
+*.test.*
+*.spec.*
+**/tests/
+
 # next.js
 /.next/
 /out/

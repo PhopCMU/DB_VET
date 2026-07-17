@@ -7,7 +7,6 @@ import { useMenuStore } from "@/store/menuStore";
 import UserSection from "./UserSection";
 import MenuItem from "./MenuItem";
 import { useUser } from "@/app/context/UserContext";
-import Loading from "../Loadings/Loading";
 
 export default function Sidebar({
   setTextHeader,
@@ -28,7 +27,7 @@ export default function Sidebar({
   // เปิด dropdown เมนูที่ active
   useEffect(() => {
     const activeMenu = menuData.find((menu) =>
-      menu.subMenus?.some((item: any) => pathname === item.part)
+      menu.subMenus?.some((item: any) => pathname === item.part),
     );
     setOpenDropdown(activeMenu ? activeMenu.name : null);
   }, [menuData, pathname]);
@@ -40,7 +39,21 @@ export default function Sidebar({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-  if (loading) return <Loading />;
+
+  // แสดง skeleton เฉพาะขอบเขตของ sidebar เท่านั้น (ไม่ overlay เต็มจอ)
+  // เพื่อไม่ให้ซ้อนทับกับ loading ของ PermissionGuard ที่จัดการ full-page loading อยู่แล้ว
+  if (loading) {
+    return (
+      <aside
+        className="bg-gradient-to-b from-gray-800 to-gray-900 text-white p-4 fixed top-0 left-0 z-20 shadow-xl flex flex-col items-center justify-center"
+        style={{ width: isExpanded ? 256 : 64, height: "100vh" }}
+      >
+        <span className="material-symbols-outlined text-3xl text-gray-300 animate-spin">
+          progress_activity
+        </span>
+      </aside>
+    );
+  }
   return (
     <motion.aside
       initial={isExpanded ? "expanded" : "collapsed"}

@@ -25,6 +25,18 @@ npm run dev        # http://localhost:4040
 # 4. Production build
 npm run build
 npm run start      # http://localhost:4040
+
+## Testing
+
+This project includes a basic test setup using Vitest. Install dev dependencies and run:
+
+```bash
+npm install
+npm run test         # run tests once
+npm run test:watch   # run tests in watch mode during development
+```
+
+CI: a GitHub Actions workflow runs `lint`, `test` and `build` on push/PR to `main`.
 ```
 
 ---

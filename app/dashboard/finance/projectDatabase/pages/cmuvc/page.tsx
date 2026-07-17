@@ -29,7 +29,7 @@ export default function CmuvcPage() {
   const [dataParticipant, setDataParticipant] =
     useState<ApiResponseData | null>(null);
   const [activeTab, setActiveTab] = useState<"pre" | "main" | "abstract">(
-    "pre"
+    "pre",
   );
   const [onChangeFilePayment, setOnChangeFilePayment] =
     useState<ApiResponseData>();
@@ -39,7 +39,7 @@ export default function CmuvcPage() {
 
   const { canView, canCreate, canEdit, canDelete } = usePermission(
     SUB_MENU_ID,
-    PROJECT_ID
+    PROJECT_ID,
   );
 
   const fetchThemeTitle = async (date: Date): Promise<void> => {
@@ -55,7 +55,7 @@ export default function CmuvcPage() {
         router.replace("/");
       }
     } catch (error) {
-      console.error("Failed to fetch theme data:", error);
+      console.error("Failed to fetch theme data");
     } finally {
       setIsLoading(false);
     }
@@ -92,18 +92,16 @@ export default function CmuvcPage() {
       case "pre":
         result =
           dataParticipant.search_participant?.filter(
-            (p) => p.themeTitleId === "ce291973-8980-4a7c-9ab4-13a684aea33b"
+            (p) => p.themeTitleId === "ce291973-8980-4a7c-9ab4-13a684aea33b",
           ) || [];
         break;
       case "main":
         result =
           dataParticipant.search_participant?.filter(
-            (p) => p.themeTitleId === "522b5662-ebc8-45b7-bfaa-350d8fff66a4"
+            (p) => p.themeTitleId === "522b5662-ebc8-45b7-bfaa-350d8fff66a4",
           ) || [];
         break;
-      case "abstract":
-        result = dataParticipant.search_abstract || [];
-        break;
+
       default:
         result = [];
     }
@@ -112,7 +110,7 @@ export default function CmuvcPage() {
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
       result = result.filter((item) =>
-        `${item.fname} ${item.lname}`.toLowerCase().includes(query)
+        `${item.fname} ${item.lname}`.toLowerCase().includes(query),
       );
     }
 
@@ -401,7 +399,7 @@ export default function CmuvcPage() {
                     <p className="mt-2 text-4xl font-bold text-amber-900">
                       {
                         filteredUsers().filter(
-                          (user) => user.payments === false
+                          (user) => user.payments === false,
                         ).length
                       }
                     </p>
@@ -449,14 +447,14 @@ export default function CmuvcPage() {
                           {
                             name: "สำเร็จ",
                             value: filteredUsers().filter(
-                              (user) => user.payments === true
+                              (user) => user.payments === true,
                             ).length,
                             color: "#059669", // emerald-600
                           },
                           {
                             name: "รอตรวจสอบ",
                             value: filteredUsers().filter(
-                              (user) => user.payments === false
+                              (user) => user.payments === false,
                             ).length,
                             color: "#d97706", // amber-600
                           },
@@ -499,7 +497,6 @@ export default function CmuvcPage() {
                   label: "Main Conference",
                   icon: "calendar_month",
                 },
-                { id: "abstract", label: "Abstract", icon: "description" },
               ].map((tab: any) => (
                 <motion.button
                   key={tab.id}
@@ -692,7 +689,7 @@ export default function CmuvcPage() {
                                     {user?.organization?.length > 20
                                       ? `${user.organization.substring(
                                           0,
-                                          20
+                                          20,
                                         )}...`
                                       : user?.organization || "ไม่ระบุองค์กร"}
                                   </span>

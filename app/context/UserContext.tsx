@@ -44,8 +44,16 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem("authToken");
 
       if (token) {
-        const response = await verifyToken(token);
+        // ดึง userData และ superAdminIds พร้อมกัน แล้วค่อย set state ทีเดียว
+        // เพื่อป้องกันไม่ให้ isSuperAdmin เปลี่ยนค่าหลังจาก userData ถูก set แล้ว
+        // (ซึ่งจะทำให้ effect ที่ depend ทั้งคู่ยิงซ้ำ และเรียก API ซ้ำ เช่น /role/project)
+        const [response, superAdminResponse] = await Promise.all([
+          verifyToken(token),
+          SUPER_ADMIN_IDS().catch(() => [] as string[]),
+        ]);
+
         if (response && response.data) {
+          setSuperAdminIds((superAdminResponse as any) || []);
           setUserData(response.data as UserInfoGet);
         } else {
           if (
@@ -86,15 +94,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
     router.push("/"); // เปลี่ยนเส้นทางไปหน้า login
   };
 
-  // โหลด super admin IDs จาก API
-  useEffect(() => {
-    const loadSuperAdminIds = async () => {
-      const response: any = await SUPER_ADMIN_IDS();
-      setSuperAdminIds(response);
-    };
-    loadSuperAdminIds();
-  }, []);
-
+  // โหลด super admin IDs จาก API พร้อมกับ userData (ดู fetchUserData ด้านบน)
   useEffect(() => {
     if (hasCheckedAuth.current) return;
 

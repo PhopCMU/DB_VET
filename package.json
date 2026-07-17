@@ -6,7 +6,12 @@
     "dev": "next dev -p 4040",
     "build": "next build",
     "start": "next start -p 4040",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest --coverage",
+    "prepare": "husky install",
+    "ci": "npm run lint && npm run test"
   },
   "dependencies": {
     "@types/crypto-js": "^4.2.2",
@@ -36,12 +41,13 @@
     "react-tooltip": "^5.28.0",
     "recharts": "^2.15.3",
     "sweetalert2": "^11.26.23",
-    "uuid": "^11.1.0",
+    "uuid": "^11.1.1",
     "zustand": "^5.0.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/bun": "latest",
     "@types/date-fns": "^2.5.3",
     "@types/file-saver": "^2.0.7",
     "@types/lodash.isequal": "^4.5.8",
@@ -49,10 +55,16 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10",
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
+    "husky": "^8.0.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "@types/bun": "latest"
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "postcss": ">=8.5.10",
+    "uuid": ">=11.1.1"
   }
 }
