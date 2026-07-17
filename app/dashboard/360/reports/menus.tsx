@@ -392,6 +392,12 @@ export const TabsVphcap = [
 
 export const TabsSanbox = [
   {
+    key: "สัตวแพทย์ (ชำนาญการพิเศษ)",
+    label: "สัตวแพทย์ (ชำนาญการพิเศษ)",
+    icon: "health_and_safety",
+    color: "gray",
+  },
+  {
     key: "สัตวแพทย์",
     label: "สัตวแพทย์",
     icon: "schema",
