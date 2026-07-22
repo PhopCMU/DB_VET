@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import "react-datepicker/dist/react-datepicker.css";
 import { StudentData } from "@/app/model/anatomy/studentModel";
 import { config } from "@/config/config_api";
@@ -8,11 +7,12 @@ import { Cmuvc_UpdateFileRouterCryptoJS } from "@/app/routers/cmuvc/PostRouter";
 import { AbstractDataModel } from "@/app/model/cmuvc/abstractModel";
 import mammoth from "mammoth";
 import {
-  putUpdate_Participant_Abstract_Image,
   putUpdateAbstactStatus,
   putUpdateAbstactText,
 } from "@/app/routers/cmuvc/PutRouter";
 import { LoadingModal, ModalAlertWarning } from "../Modal";
+import { putUpdate_Participant_Abstract_Image } from "@/app/routers/cmuvc/PutRouter";
+import { motion } from "framer-motion";
 
 interface ModalAbstractProps {
   isOpen: boolean;
@@ -22,18 +22,7 @@ interface ModalAbstractProps {
   foodsData?: any;
   abstractTypeData?: any;
   onSave: (updatedData: AbstractDataModel) => void;
-  onSuccess?: () => void; // เพิ่ม prop นี้
-}
-
-interface ModalAbstractProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  formData: any;
-  foodsData?: any;
-  abstractTypeData?: any;
-  onSave: (updatedData: AbstractDataModel) => void;
-  onSuccess?: () => void; // เพิ่ม prop นี้
+  onSuccess?: () => void;
 }
 
 export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
@@ -58,7 +47,7 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
 
   // Handler เมื่อ input เปลี่ยน
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setDataEdit((prev) => ({ ...prev, [name]: value }));
@@ -98,13 +87,13 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
     // Filter out undefined and empty string fields
     const filteredPayload = Object.fromEntries(
       Object.entries(payload).filter(
-        ([_, value]) => value !== undefined && value !== ""
-      )
+        ([_, value]) => value !== undefined && value !== "",
+      ),
     );
 
     // Check if there are other fields besides studentId
     const hasOtherFields = Object.keys(filteredPayload).some(
-      (key) => key !== "studentId"
+      (key) => key !== "studentId",
     );
 
     if (!hasOtherFields) {
@@ -117,7 +106,7 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
     // Call update API
     const response = await putUpdateAbstactText(
       filteredPayload as any,
-      setUploadProgress
+      setUploadProgress,
     );
 
     if (response.success) {
@@ -134,17 +123,15 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4 animate-fadeIn">
       {isConfirmOpen && (
         <AlertConfirm
           message="คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?"
-          // isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}
           onConfirm={() => handleConfirm()}
         />
       )}
 
-      {/* ModalAlert Messages */}
       {isModalAlertOpen && (
         <ModalAlertWarning
           details={isModalMessageOpen || ""}
@@ -152,23 +139,10 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
         />
       )}
 
-      {/* loading */}
       <LoadingModal isOpen={isLoading} progress={uploadProgress} />
-      {/* Overlay */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0"
-      />
 
       {/* Modal Content */}
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative z-10"
-      >
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative z-10 animate-scaleIn">
         {/* Header */}
         <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-100">
           <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
@@ -194,20 +168,9 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
 
         {/* Form Content */}
         <div className="p-6">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {/* ชื่อ */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 0.2 }}
-              className="col-span-1 md:col-span-1"
-            >
+            <div className="col-span-1 md:col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 ชื่อ <span className="text-red-500">*</span>
               </label>
@@ -220,16 +183,10 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                 placeholder="กรอกชื่อ"
               />
-            </motion.div>
+            </div>
+
             {/* นามสกุล */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 0.2 }}
-              className="col-span-1 md:col-span-1"
-            >
+            <div className="col-span-1 md:col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 นามสกุล <span className="text-red-500">*</span>
               </label>
@@ -242,17 +199,10 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                 placeholder="นามสกุล"
               />
-            </motion.div>
+            </div>
 
             {/* อีเมล */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 0.5 }}
-              className="col-span-1"
-            >
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 อีเมล <span className="text-red-500">*</span>
               </label>
@@ -265,19 +215,12 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                 placeholder="อีเมล"
               />
-            </motion.div>
+            </div>
 
-            {/* เบอร์ติดตต่อ */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 0.5 }}
-              className="col-span-1"
-            >
+            {/* เบอร์ติดต่อ */}
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                เบอร์ติดตต่อ <span className="text-red-500">*</span>
+                เบอร์ติดต่อ <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -286,19 +229,12 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                 onChange={handleInputChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                placeholder="อีเมล"
+                placeholder="เบอร์โทร"
               />
-            </motion.div>
+            </div>
 
-            {/*อาหาร */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 0.1 }}
-              className="col-span-1"
-            >
+            {/* อาหาร */}
+            <div className="col-span-1">
               <label
                 htmlFor="foodType"
                 className="block text-sm font-medium text-gray-700 mb-1.5"
@@ -311,7 +247,7 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                   name="foodId"
                   value={dataEdit.foodId || formData.foodId}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#b18246] focus:border-[#b18246] text-gray-700 appearance-none bg-white"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-700 appearance-none bg-white transition-all"
                   required
                 >
                   {foodsData.map(
@@ -319,7 +255,7 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                       <option key={food.foodId} value={food.foodId}>
                         {food.foodType}
                       </option>
-                    )
+                    ),
                   )}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
@@ -338,19 +274,12 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                   </svg>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* ประเภทนำเสนอ */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 0.3 }}
-              className="col-span-1"
-            >
+            <div className="col-span-1">
               <label
-                htmlFor="levelup"
+                htmlFor="abstractTypeId"
                 className="block text-sm font-medium text-gray-700 mb-1.5"
               >
                 ประเภทนำเสนอ <span className="text-red-500">*</span>
@@ -361,7 +290,7 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                   name="abstractTypeId"
                   value={dataEdit.abstractTypeId || formData.abstractTypeId}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#b18246] focus:border-[#b18246] text-gray-700 appearance-none bg-white"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-gray-700 appearance-none bg-white transition-all"
                   required
                 >
                   {abstractTypeData &&
@@ -376,7 +305,7 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                         >
                           {abstract.adstractType}
                         </option>
-                      )
+                      ),
                     )}
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
@@ -395,17 +324,10 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                   </svg>
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* หัวข้อเรื่อง */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 0.5 }}
-              className="col-span-1 md:col-span-4"
-            >
+            <div className="col-span-1 md:col-span-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 หัวข้อเรื่อง <span className="text-red-500">*</span>
               </label>
@@ -418,17 +340,10 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                 placeholder="หัวข้อเรื่อง"
               />
-            </motion.div>
+            </div>
 
             {/* ปุ่มบันทึก */}
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ delay: 1.4 }}
-              className="col-span-full flex justify-end gap-3 mt-6 pt-6 border-t border-gray-100"
-            >
+            <div className="col-span-full flex justify-end gap-3 mt-6 pt-6 border-t border-gray-100">
               <button
                 type="button"
                 onClick={handleCancel}
@@ -443,10 +358,10 @@ export const ModalEditAbstract: React.FC<ModalAbstractProps> = ({
               >
                 บันทึกข้อมูล
               </button>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
@@ -465,7 +380,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isModalAlertOpen, setIsModalAlertOpen] = useState(false);
   const [isModalMessageOpen, setIsModalMessageOpen] = useState<string | null>(
-    null
+    null,
   );
   const [dataEdit, setDataEdit] = useState<any>({ ...formData });
 
@@ -474,18 +389,22 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
       ? URL.createObjectURL(formData.fileAbstarct)
       : `${config.URL_API}/uploads/dataCmuvc/abstracts/${
           formData.fileAbstarct || "default.docx"
-        }`
+        }`,
   );
 
   const [docxContent, setDocxContent] = useState<string>("");
+  const [isLoadingDoc, setIsLoadingDoc] = useState<boolean>(false);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const renderDocx = async () => {
       if (!imagePreview) {
         setDocxContent("");
         return;
       }
-      setIsLoading(true);
+
+      setIsLoadingDoc(true);
       try {
         let arrayBuffer;
         if (
@@ -495,9 +414,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
           arrayBuffer = await formData.fileAbstract.arrayBuffer();
         } else {
           const response = await fetch(imagePreview);
-          if (!response.ok) {
-            throw new Error("ไม่สามารถดึงเอกสารได้");
-          }
+          if (!response.ok) throw new Error("ไม่สามารถดึงเอกสารได้");
           arrayBuffer = await response.arrayBuffer();
         }
         const result = await mammoth.convertToHtml({ arrayBuffer });
@@ -505,26 +422,13 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
       } catch (err) {
         console.error("เกิดข้อผิดพลาดในการแสดง .docx:", err);
         setDocxContent("");
-        setIsModalMessageOpen("ไม่สามารถโหลดตัวอย่างเอกสารได้");
-        setIsModalAlertOpen(true);
       } finally {
-        setIsLoading(false);
+        setIsLoadingDoc(false);
       }
     };
 
     renderDocx();
-
-    // ล้าง object URL
-    return () => {
-      if (
-        typeof formData.fileAbstract === "object" &&
-        formData.fileAbstract &&
-        imagePreview
-      ) {
-        URL.revokeObjectURL(imagePreview);
-      }
-    };
-  }, [imagePreview, formData.fileAbstract]);
+  }, [isOpen, imagePreview]);
 
   if (!isOpen) return null;
 
@@ -535,7 +439,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
         ? URL.createObjectURL(formData.fileAbstarct)
         : `${config.URL_API}/uploads/dataCmuvc/abstracts/${
             formData.fileAbstarct || "default.docx"
-          }`
+          }`,
     );
     setIsEditing(false); // ออกจากโหมดแก้ไข
   };
@@ -584,7 +488,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
 
     const response: any = await Cmuvc_UpdateFileRouterCryptoJS(
       formDataToSend,
-      setUploadProgress
+      setUploadProgress,
     );
 
     if (response.success) {
@@ -608,7 +512,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
     setUploadProgress(0);
     const response: any = await putUpdateAbstactStatus(
       abstractId,
-      setUploadProgress
+      setUploadProgress,
     );
 
     if (response.success || response.status === 200) {
@@ -629,7 +533,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] backdrop-blur-sm p-4 animate-fadeIn">
       {isConfirmOpen && (
         <AlertConfirm
           message="คุณต้องการบันทึกข้อมูลนี้ใช่หรือไม่?"
@@ -647,19 +551,8 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
 
       <LoadingModal isOpen={isLoading} progress={uploadProgress} />
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0"
-      />
-
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto z-40 border border-gray-200"
-      >
+      {/* Modal Content */}
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-7xl max-h-[85vh] overflow-hidden z-40 border border-gray-200 animate-scaleIn flex flex-col">
         <div className="sticky top-0 bg-white z-10 px-8 py-6 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
           <button
@@ -683,15 +576,15 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
           </button>
         </div>
 
-        <div className="px-6 py-6 space-y-8">
+        <div className="flex-1 overflow-y-auto px-8 py-6">
           {!isEditing ? (
-            <div className="space-y-8">
+            <div className="space-y-6">
               <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">
                 ข้อมูลปัจจุบัน
               </h3>
 
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                   <p className="text-sm font-medium text-gray-700 flex items-center">
                     <span className="material-symbols-outlined mr-2 text-blue-500">
                       description
@@ -701,7 +594,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
                   <a
                     href={imagePreview || "#"}
                     download="document.docx"
-                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center transition-colors"
                   >
                     <span className="material-symbols-outlined mr-1 text-base">
                       download
@@ -709,36 +602,57 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
                     ดาวน์โหลดเอกสาร
                   </a>
                 </div>
-                <div className="relative h-[50vh] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                  {docxContent ? (
+
+                {/* Word Preview Container */}
+                <div
+                  className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50"
+                  style={{ height: "calc(85vh - 280px)", minHeight: "400px" }}
+                >
+                  {isLoadingDoc ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <span className="material-symbols-rounded text-4xl text-blue-500 animate-spin">
+                          progress_activity
+                        </span>
+                        <p className="mt-2 text-gray-600">กำลังโหลดเอกสาร...</p>
+                      </div>
+                    </div>
+                  ) : docxContent ? (
                     <div
-                      className="w-full h-full overflow-y-auto p-4"
+                      className="w-full h-full overflow-y-auto p-6 prose prose-sm max-w-none"
+                      style={{
+                        fontFamily: "Sarabun, -apple-system, sans-serif",
+                        lineHeight: "1.8",
+                      }}
                       dangerouslySetInnerHTML={{ __html: docxContent }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                       <div className="text-center">
-                        <span className="material-symbols-outlined text-4xl">
+                        <span className="material-symbols-outlined text-5xl">
                           insert_drive_file
                         </span>
-                        <p className="mt-2">ไม่มีเอกสาร Word ให้แสดง</p>
+                        <p className="mt-3 text-base">
+                          ไม่มีเอกสาร Word ให้แสดง
+                        </p>
+                        <p className="mt-1 text-sm">กรุณาอัปโหลดเอกสาร .docx</p>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex justify-between gap-4 pt-4 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={
                     formData.statusAbstract === "Pending"
-                      ? () => handleConfirmOpen()
+                      ? handleConfirmOpen
                       : undefined
                   }
                   className={`${
                     formData.statusAbstract === "Pending"
-                      ? "flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center shadow-md hover:shadow-lg"
+                      ? "flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center shadow-md hover:shadow-lg"
                       : "hidden"
                   }`}
                 >
@@ -750,7 +664,7 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
                 <button
                   type="button"
                   onClick={toggleEditMode}
-                  className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center shadow-md hover:shadow-lg"
+                  className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center shadow-md hover:shadow-lg"
                 >
                   <span className="material-symbols-outlined mr-2">edit</span>
                   แก้ไขข้อมูล
@@ -758,125 +672,122 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
               <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">
                 แก้ไขข้อมูล
               </h3>
 
-              <div className="grid grid-cols-1  gap-6">
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                  <label className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                    <span className="material-symbols-outlined mr-2 text-amber-500">
-                      description
-                    </span>
-                    อัปโหลดเอกสาร Word (.docx){" "}
-                    <span className="text-red-500 ml-1">*</span>
-                  </label>
-                  <p className="text-xs text-gray-500 mb-4">
-                    รองรับไฟล์ .docx สูงสุด 10MB
-                  </p>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <label className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <span className="material-symbols-outlined mr-2 text-amber-500">
+                    description
+                  </span>
+                  อัปโหลดเอกสาร Word (.docx){" "}
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <p className="text-xs text-gray-500 mb-4">
+                  รองรับไฟล์ .docx สูงสุด 10MB
+                </p>
 
-                  <div className="relative group">
-                    <input
-                      type="file"
-                      name="fileAbstract"
-                      accept=".docx"
-                      onChange={handleFileChange}
-                      required
-                      className="w-full opacity-0 absolute inset-0 cursor-pointer z-20"
-                    />
-                    <div
-                      className={`border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 relative z-10
-                        ${
-                          typeof dataEdit.fileAbstract === "object" &&
-                          dataEdit.fileAbstract
-                            ? "border-green-300 bg-green-50"
-                            : "border-gray-300 hover:border-amber-400 hover:bg-amber-50"
-                        }`}
-                    >
-                      {typeof dataEdit.fileAbstract === "object" &&
-                      dataEdit.fileAbstract ? (
-                        <div className="flex flex-col items-center space-y-3">
-                          <div className="relative">
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                              <span className="material-symbols-outlined text-3xl text-green-500">
-                                description
-                              </span>
-                            </div>
-                            <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1">
-                              <span className="material-symbols-outlined text-sm">
-                                check
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-green-600 text-sm font-medium">
-                            {dataEdit.fileAbstract.name}
-                          </p>
-                          <div className="flex space-x-3">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(
-                                  URL.createObjectURL(dataEdit.fileAbstract),
-                                  "_blank"
-                                );
-                              }}
-                              className="text-xs text-blue-500 hover:text-blue-700 flex items-center"
-                            >
-                              <span className="material-symbols-outlined mr-1 text-sm">
-                                visibility
-                              </span>
-                              ดูไฟล์
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDataEdit((prev: any) => ({
-                                  ...prev,
-                                  fileAbstract: null,
-                                }));
-                                setImagePreview(null);
-                                setDocxContent("");
-                              }}
-                              className="text-xs text-red-500 hover:text-red-700 flex items-center"
-                            >
-                              <span className="material-symbols-outlined mr-1 text-sm">
-                                delete
-                              </span>
-                              ลบไฟล์
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                            <span className="material-symbols-outlined text-3xl text-gray-400">
+                <div className="relative">
+                  <input
+                    type="file"
+                    name="fileAbstract"
+                    accept=".docx"
+                    onChange={handleFileChange}
+                    required
+                    className="w-full opacity-0 absolute inset-0 cursor-pointer z-20"
+                  />
+                  <div
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 relative z-10 ${
+                      typeof dataEdit.fileAbstract === "object" &&
+                      dataEdit.fileAbstract
+                        ? "border-green-300 bg-green-50"
+                        : "border-gray-300 hover:border-amber-400 hover:bg-amber-50/50"
+                    }`}
+                  >
+                    {typeof dataEdit.fileAbstract === "object" &&
+                    dataEdit.fileAbstract ? (
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="relative">
+                          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-4xl text-green-500">
                               description
                             </span>
                           </div>
-                          <p className="mt-2 text-sm text-gray-600">
-                            คลิกหรือลากวางเพื่ออัปโหลด .docx
-                          </p>
-                          <p className="mt-1 text-xs text-gray-400">
-                            ไฟล์ต้องมีลายเซ็นและวันที่ชัดเจน
-                          </p>
-                        </>
-                      )}
-                    </div>
+                          <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full p-1.5">
+                            <span className="material-symbols-outlined text-base">
+                              check
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-green-600 text-sm font-medium max-w-xs truncate">
+                          {dataEdit.fileAbstract.name}
+                        </p>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(
+                                URL.createObjectURL(dataEdit.fileAbstract),
+                                "_blank",
+                              );
+                            }}
+                            className="text-xs text-blue-500 hover:text-blue-700 flex items-center transition-colors"
+                          >
+                            <span className="material-symbols-outlined mr-1 text-sm">
+                              visibility
+                            </span>
+                            ดูไฟล์
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDataEdit((prev: any) => ({
+                                ...prev,
+                                fileAbstract: null,
+                              }));
+                              setImagePreview(null);
+                              setDocxContent("");
+                            }}
+                            className="text-xs text-red-500 hover:text-red-700 flex items-center transition-colors"
+                          >
+                            <span className="material-symbols-outlined mr-1 text-sm">
+                              delete
+                            </span>
+                            ลบไฟล์
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-4">
+                        <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                          <span className="material-symbols-outlined text-4xl text-gray-400">
+                            description
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 font-medium">
+                          คลิกหรือลากวางเพื่ออัปโหลด .docx
+                        </p>
+                        <p className="mt-2 text-xs text-gray-400">
+                          ไฟล์ต้องมีลายเซ็นและวันที่ชัดเจน
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col-reverse md:flex-row justify-between gap-4 pt-6 border-t border-gray-200">
-                <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-3 flex-1">
                   <button
                     type="button"
                     onClick={handleCancelEdit}
-                    className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors duration-200 flex items-center"
+                    className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
                   >
-                    <span className="material-symbols-outlined mr-1">
+                    <span className="material-symbols-outlined mr-2">
                       arrow_back
                     </span>
                     ย้อนกลับ
@@ -884,27 +795,27 @@ export const ModalEditFileAbstract: React.FC<ModalAbstractProps> = ({
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors duration-200 flex items-center"
+                    className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
                   >
-                    <span className="material-symbols-outlined mr-1">
+                    <span className="material-symbols-outlined mr-2">
                       close
                     </span>
-                    ยกเลิกเอกสารที่แนบ
+                    ยกเลิก
                   </button>
                 </div>
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="px-8 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center"
+                  className="px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center"
                 >
                   <span className="material-symbols-outlined mr-2">save</span>
-                  บันทึกการเปลี่ยนแปลง
+                  บันทึกข้อมูล
                 </button>
               </div>
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };
@@ -923,7 +834,7 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isModalAlertOpen, setIsModalAlertOpen] = useState(false);
   const [isModalMessageOpen, setIsModalMessageOpen] = useState<string | null>(
-    null
+    null,
   );
   const [dataEdit, setDataEdit] = useState<StudentData>({ ...formData });
   const [imagePreview, setImagePreview] = useState<string | null>(
@@ -931,7 +842,7 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
       ? URL.createObjectURL(formData.Imagepayment)
       : `${config.URL_API}/uploads/dataCmuvc/slips/${
           formData.Imagepayment || "default.png"
-        }`
+        }`,
   );
 
   if (!isOpen) return null;
@@ -940,7 +851,7 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
     setImagePreview(
       formData.Imagepayment && typeof formData.Imagepayment === "object"
         ? URL.createObjectURL(formData.Imagepayment)
-        : `${config.URL_API}/uploads/${formData.Imagepayment || "default.png"}`
+        : `${config.URL_API}/uploads/${formData.Imagepayment || "default.png"}`,
     );
 
     setIsEditing(false); // ออกจากโหมดแก้ไข
@@ -968,7 +879,7 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
           formData.participantId
             ? "Participant ID is required."
             : "Abstract ID is required."
-        },`
+        },`,
       );
       setIsModalAlertOpen(true);
       setIsLoading(false);
@@ -986,14 +897,14 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
 
     formDataToSend.append(
       `${formData.participantId ? "participantId" : "abstractId"}`,
-      formData.participantId || formData.abstractId
+      formData.participantId || formData.abstractId,
     );
     if (dataEdit.Imagepayment.name) {
       formDataToSend.append("Imagepayment", dataEdit.Imagepayment);
     }
     formDataToSend.append(
       "type",
-      `${formData.participantId ? "participant" : "abstract"}`
+      `${formData.participantId ? "participant" : "abstract"}`,
     );
 
     try {
@@ -1001,7 +912,7 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
         formDataToSend,
         (progress) => {
           setUploadProgress(progress); // รับค่า progress จริงจาก axios.onUploadProgress
-        }
+        },
       );
 
       if (response.success) {
@@ -1043,7 +954,7 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
           formData.participantId
             ? "Participant ID is required."
             : "Abstract ID is required."
-        },`
+        },`,
       );
       setIsModalAlertOpen(true);
       setIsLoading(false);
@@ -1061,9 +972,9 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
     try {
       const response: any = await putUpdate_Participant_Abstract_Image(
         payload,
-        (progress) => {
+        (progress: any) => {
           setUploadProgress(progress); // รับค่า progress จริงจาก axios.onUploadProgress
-        }
+        },
       );
 
       if (response.success) {
@@ -1130,7 +1041,7 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto z-40 border border-gray-200"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto z-40 border border-gray-200"
       >
         {/* Header */}
         <div className="sticky top-0 bg-white z-10 px-8 py-6 border-b border-gray-200 flex justify-between items-center">
@@ -1174,11 +1085,11 @@ export const ModalEditFileParticipant: React.FC<ModalAbstractProps> = ({
                   หลักฐานสลิปเงินโอน
                 </p>
                 <div className="flex justify-center">
-                  <div className="relative group">
+                  <div className="relative group w-full flex justify-center">
                     <img
                       src={imagePreview || "_.jpg"}
                       alt=""
-                      className="w-72 object-contain rounded-lg border-2 border-dashed border-gray-300"
+                      className="w-full max-w-md max-h-[60vh] object-contain rounded-lg border-2 border-dashed border-gray-300"
                     />
 
                     {imagePreview ===

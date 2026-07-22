@@ -46,7 +46,7 @@ export default function Header({ textHeader }: { textHeader: string }) {
         damping: 25,
         duration: 0.6,
       }}
-      className="bg-[#1d2736] backdrop-blur-xl border-b border-gray-700/60 p-4 flex justify-between items-center fixed top-0 left-0 w-full z-50 "
+      className="bg-[#1d2736] backdrop-blur-xl border-b border-gray-700/60 p-4 flex justify-between items-center fixed top-0 left-0 w-full z-40 "
     >
       {/* Left side - Logo/Title */}
       <div className="flex items-center space-x-3">

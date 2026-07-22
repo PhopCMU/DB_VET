@@ -1,6 +1,25 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  LayoutDashboard,
+  Users,
+  Mic,
+  CalendarCheck,
+  Building2,
+  List,
+  Store,
+  Stethoscope,
+  GraduationCap,
+  BadgeCheck,
+  UserCog,
+  CalendarDays,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  ChevronDown,
+} from "lucide-react";
 
 import { useUser } from "@/app/context/UserContext";
 import ParticipantsList_Main from "./components/ParticipantsList_Main";
@@ -12,14 +31,67 @@ import InternshipRAtList from "./components/InternshipList_RA";
 import StudentsList from "./components/StudentsList";
 import SettingsPanel from "./components/SettingsPanel";
 import PersonnelList from "./components/PersonnelList";
-import { Dashboards } from "./components/Dashboards";
+import Dashboards from "./components/Dashboards";
 import SponsorsBootsList from "./components/SponsorsBootsList";
 import Events from "./components/Events";
+import packageVersion from "@/package.json";
+
+// Menu theme configuration — one clear accent color per section (used sparingly: icon + active state only)
+const menuThemes = {
+  dashboards: {
+    accent: "bg-violet-500",
+    text: "text-violet-600",
+    active: "bg-violet-50 text-violet-700",
+    ring: "ring-violet-200",
+  },
+  participants: {
+    accent: "bg-blue-500",
+    text: "text-blue-600",
+    active: "bg-blue-50 text-blue-700",
+    ring: "ring-blue-200",
+  },
+  sponsors: {
+    accent: "bg-emerald-500",
+    text: "text-emerald-600",
+    active: "bg-emerald-50 text-emerald-700",
+    ring: "ring-emerald-200",
+  },
+  veterinary: {
+    accent: "bg-rose-500",
+    text: "text-rose-600",
+    active: "bg-rose-50 text-rose-700",
+    ring: "ring-rose-200",
+  },
+  students: {
+    accent: "bg-amber-500",
+    text: "text-amber-600",
+    active: "bg-amber-50 text-amber-700",
+    ring: "ring-amber-200",
+  },
+  personnel: {
+    accent: "bg-indigo-500",
+    text: "text-indigo-600",
+    active: "bg-indigo-50 text-indigo-700",
+    ring: "ring-indigo-200",
+  },
+  events: {
+    accent: "bg-fuchsia-500",
+    text: "text-fuchsia-600",
+    active: "bg-fuchsia-50 text-fuchsia-700",
+    ring: "ring-fuchsia-200",
+  },
+  settings: {
+    accent: "bg-slate-500",
+    text: "text-slate-600",
+    active: "bg-slate-100 text-slate-700",
+    ring: "ring-slate-200",
+  },
+};
 
 export default function CmuvcPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("dashboards");
-  const [openDropdown, setOpenDropdown] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const { loading } = useUser();
 
@@ -29,167 +101,192 @@ export default function CmuvcPage() {
     setCollapsed((prev) => !prev);
   };
 
-  const toggleDropdown = (dropdown: any) => {
+  const toggleDropdown = (dropdown: string) => {
     setOpenDropdown(openDropdown === dropdown ? null : dropdown);
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen  overflow-hidden">
       {/* Side Menu */}
       <motion.aside
-        initial={{ width: 256 }}
-        animate={{ width: collapsed ? 80 : 256 }}
-        transition={{ type: "spring", damping: 20 }}
-        className="bg-white border-r border-gray-200 flex flex-col"
+        initial={{ width: 260 }}
+        animate={{ width: collapsed ? 76 : 260 }}
+        transition={{
+          type: "spring",
+          damping: 32,
+          stiffness: 300,
+          mass: 0.8,
+        }}
+        className="bg-white flex flex-col  "
       >
-        <div className="p-4 flex items-center justify-between border-b border-gray-100">
-          {!collapsed && (
-            <motion.h2
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="font-bold text-xl text-gray-800 inline-flex items-center gap-1"
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: "2rem" }}
+        {/* Header */}
+        <div className="h-16 shrink-0 px-4 flex items-center justify-between border-b border-gray-100">
+          <AnimatePresence mode="wait">
+            {!collapsed && (
+              <motion.div
+                key="brand"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { duration: 0.2 } }}
+                exit={{ opacity: 0, transition: { duration: 0.1 } }}
+                className="flex items-center gap-2.5 min-w-0"
               >
-                menu_open
-              </span>
-              CMUVC
-            </motion.h2>
-          )}
-          <button
+                <div className="w-8 h-8 shrink-0 rounded-lg bg-blue-600 flex items-center justify-center">
+                  <Menu className="w-4.5 h-4.5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="font-semibold text-[15px] text-gray-900 leading-tight truncate">
+                    CMUVC
+                  </h2>
+                  <p className="text-[11px] text-gray-400 leading-tight truncate">
+                    Management System
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <motion.button
             onClick={toggleMenu}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+            aria-label={collapsed ? "ขยายเมนู" : "ย่อเมนู"}
+            whileTap={{ scale: 0.92 }}
+            transition={{ duration: 0.15 }}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors duration-150 shrink-0"
           >
-            <span className="material-symbols-outlined">
-              {collapsed ? "chevron_right" : "chevron_left"}
-            </span>
-          </button>
+            {collapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronLeft className="w-4 h-4" />
+            )}
+          </motion.button>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1 text-[12px]">
+        {/* Navigation */}
+        <nav className="flex-1 px-2.5 py-3 space-y-0.5 text-sm overflow-y-auto overflow-x-hidden scrollbar-thin">
           {/* Dashboards */}
           <MenuItem
             active={activeMenu === "dashboards"}
             onClick={() => setActiveMenu("dashboards")}
-            icon="space_dashboard"
+            icon={LayoutDashboard}
             label="Dashboards"
             collapsed={collapsed}
+            theme={menuThemes.dashboards}
           />
+
           {/* Participants Dropdown */}
           <MenuItem
             active={
               activeMenu === "participants_main" ||
               activeMenu === "participants_pre"
             }
-            icon="groups"
+            icon={Users}
             label="Participants"
             collapsed={collapsed}
             isDropdown
-            isOpen={openDropdown === "participants_main"}
-            toggleDropdown={() => toggleDropdown("participants_main")}
+            isOpen={openDropdown === "participants"}
+            toggleDropdown={() => toggleDropdown("participants")}
+            theme={menuThemes.participants}
           >
             <MenuItem
               active={activeMenu === "participants_main"}
               onClick={() => setActiveMenu("participants_main")}
-              icon="adaptive_audio_mic"
+              icon={Mic}
               label="Main Conference"
               collapsed={collapsed}
               isSubItem
+              theme={menuThemes.participants}
             />
             <MenuItem
               active={activeMenu === "participants_pre"}
               onClick={() => setActiveMenu("participants_pre")}
-              icon="event_available"
+              icon={CalendarCheck}
               label="Pre Congress"
               collapsed={collapsed}
               isSubItem
+              theme={menuThemes.participants}
             />
           </MenuItem>
 
           {/* Sponsors Dropdown */}
           <MenuItem
             active={activeMenu === "sponsors" || activeMenu === "sponsor_boot"}
-            icon="corporate_fare"
+            icon={Building2}
             label="Sponsors"
             collapsed={collapsed}
             isDropdown
             isOpen={openDropdown === "sponsors"}
             toggleDropdown={() => toggleDropdown("sponsors")}
+            theme={menuThemes.sponsors}
           >
             <MenuItem
               active={activeMenu === "sponsors"}
               onClick={() => setActiveMenu("sponsors")}
-              icon="list_alt"
+              icon={List}
               label="Sponsors List"
               collapsed={collapsed}
               isSubItem
+              theme={menuThemes.sponsors}
             />
             <MenuItem
               active={activeMenu === "sponsor_boot"}
               onClick={() => setActiveMenu("sponsor_boot")}
-              icon="storefront"
+              icon={Store}
               label="Sponsors Boots"
               collapsed={collapsed}
               isSubItem
+              theme={menuThemes.sponsors}
             />
           </MenuItem>
 
           {/* Veterinary Dropdown */}
           <MenuItem
             active={activeMenu === "vet"}
-            icon="pets"
+            icon={Stethoscope}
             label="Veterinary"
             collapsed={collapsed}
             isDropdown
             isOpen={openDropdown === "veterinary"}
             toggleDropdown={() => toggleDropdown("veterinary")}
+            theme={menuThemes.veterinary}
           >
             <MenuItem
               active={activeMenu === "vet"}
               onClick={() => setActiveMenu("vet")}
-              icon="medical_services"
+              icon={Stethoscope}
               label="VET"
               collapsed={collapsed}
               isSubItem
+              theme={menuThemes.veterinary}
             />
-            {/* <MenuItem
-              active={activeMenu === "internship_RA"}
-              onClick={() => setActiveMenu("internship_RA")}
-              icon="work"
-              label="Internship + RA"
-              collapsed={collapsed}
-              isSubItem
-            /> */}
           </MenuItem>
 
           {/* Students */}
           <MenuItem
             active={activeMenu === "students"}
             onClick={() => setActiveMenu("students")}
-            icon="school"
+            icon={GraduationCap}
             label="Students"
             collapsed={collapsed}
+            theme={menuThemes.students}
           />
 
           {/* Personnel Dropdown */}
           <MenuItem
             active={activeMenu === "personnel"}
-            icon="badge"
+            icon={BadgeCheck}
             label="Personnel"
             collapsed={collapsed}
             isDropdown
             isOpen={openDropdown === "personnel"}
             toggleDropdown={() => toggleDropdown("personnel")}
+            theme={menuThemes.personnel}
           >
             <MenuItem
               active={activeMenu === "personnel"}
               onClick={() => setActiveMenu("personnel")}
-              icon="people_alt"
+              icon={UserCog}
               label="Person List"
               collapsed={collapsed}
               isSubItem
+              theme={menuThemes.personnel}
             />
           </MenuItem>
 
@@ -197,32 +294,61 @@ export default function CmuvcPage() {
           <MenuItem
             active={activeMenu === "events"}
             onClick={() => setActiveMenu("events")}
-            icon="event"
+            icon={CalendarDays}
             label="Events"
             collapsed={collapsed}
+            theme={menuThemes.events}
           />
 
           {/* Settings */}
           <MenuItem
             active={activeMenu === "settings"}
             onClick={() => setActiveMenu("settings")}
-            icon="settings"
+            icon={Settings}
             label="Settings"
             collapsed={collapsed}
+            theme={menuThemes.settings}
           />
         </nav>
+
+        {/* Footer */}
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.2 } }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              className="px-4 py-3 border-t border-gray-100"
+            >
+              <div className="text-[11px] text-gray-400 text-center">
+                v{packageVersion.version} © 2026 CMUVC
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-auto bg-gradient-to-br from-gray-50 to-gray-100">
+      <main className="flex-1 p-2 overflow-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeMenu}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white rounded-xl shadow-sm p-6"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
+            }}
+            exit={{
+              opacity: 0,
+              y: -8,
+              transition: { duration: 0.15, ease: [0.4, 0, 1, 1] },
+            }}
+            className="bg-white p-4"
+            style={{
+              willChange: "opacity, transform",
+              backfaceVisibility: "hidden",
+            }}
           >
             {activeMenu === "dashboards" && <Dashboards />}
             {activeMenu === "participants_main" && <ParticipantsList_Main />}
@@ -243,93 +369,128 @@ export default function CmuvcPage() {
 }
 
 // Menu Item Component
-const MenuItem = ({
-  active,
-  icon,
+interface MenuItemProps {
+  active?: boolean;
+  icon: React.ElementType;
+  label: string;
+  onClick?: () => void;
+  collapsed?: boolean;
+  isDropdown?: boolean;
+  isOpen?: boolean;
+  toggleDropdown?: () => void;
+  children?: React.ReactNode;
+  isSubItem?: boolean;
+  theme?: {
+    accent: string;
+    text: string;
+    active: string;
+    ring: string;
+  };
+}
+
+const defaultTheme = {
+  accent: "bg-gray-400",
+  text: "text-gray-600",
+  active: "bg-gray-100 text-gray-800",
+  ring: "ring-gray-200",
+};
+
+const MenuItem: React.FC<MenuItemProps> = ({
+  active = false,
+  icon: Icon,
   label,
   onClick,
-  collapsed,
+  collapsed = false,
   isDropdown = false,
   isOpen = false,
   toggleDropdown,
   children,
   isSubItem = false,
-}: any) => {
+  theme,
+}) => {
+  const currentTheme = theme || defaultTheme;
+
   return (
-    <div className={`${isSubItem ? "ml-1" : ""}`}>
+    <div>
       <motion.button
         onClick={isDropdown ? toggleDropdown : onClick}
-        whileHover={{
-          backgroundColor: active ? "#EFF6FF" : "#F9FAFB",
-          x: !collapsed ? 2 : 0,
-        }}
+        aria-expanded={isDropdown ? isOpen : undefined}
         whileTap={{ scale: 0.98 }}
-        className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg ${
+        transition={{ duration: 0.12 }}
+        className={`w-full text-left flex items-center gap-2.5 rounded-lg transition-colors duration-150 ${
+          isSubItem ? "pl-8 pr-2.5 py-2 text-[13px]" : "px-2.5 py-2.5"
+        } ${
           active
-            ? "bg-blue-50 text-blue-600 font-medium"
-            : "text-gray-700 hover:bg-gray-50"
-        } ${isSubItem ? "pl-5" : ""} ${
-          collapsed ? "justify-center" : ""
-        } relative overflow-hidden`}
+            ? `${currentTheme.active} font-medium`
+            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        } ${collapsed ? "justify-center px-0" : ""} relative group`}
       >
-        {/* Active indicator */}
+        {/* Active accent bar */}
         {active && !collapsed && (
-          <motion.div
-            layoutId="activeIndicator"
-            className="absolute left-0 w-1 h-6 bg-blue-600/50 rounded-r-full"
-            initial={false}
+          <motion.span
+            layoutId={isSubItem ? undefined : "activeIndicator"}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full ${currentTheme.accent}`}
+            transition={{ type: "spring", stiffness: 500, damping: 40 }}
           />
         )}
 
-        {/* Icon with subtle background */}
-        <motion.span
-          className={`material-symbols-outlined flex items-center justify-center ${
-            active ? "text-blue-600/50" : "text-gray-500"
-          } ${collapsed ? "text-2xl" : "text-xl"}`}
-        >
-          {icon}
-        </motion.span>
+        {/* Icon */}
+        <Icon
+          className={`shrink-0 ${
+            isSubItem ? "w-4 h-4" : "w-[18px] h-[18px]"
+          } ${active ? currentTheme.text : "text-gray-400 group-hover:text-gray-500"}`}
+          strokeWidth={2}
+        />
 
         {!collapsed && (
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.15 }}
-            className="flex-1 flex items-center justify-between"
-          >
-            <span>{label}</span>
+          <span className="flex-1 flex items-center justify-between min-w-0">
+            <span className="truncate">{label}</span>
 
             {isDropdown && (
               <motion.span
                 animate={{ rotate: isOpen ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-                className={`material-symbols-outlined text-xl ${
-                  active ? "text-blue-500/40" : "text-gray-400"
-                }`}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="shrink-0"
               >
-                expand_more
+                <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
               </motion.span>
             )}
-          </motion.div>
+          </span>
+        )}
+
+        {/* Tooltip for collapsed state */}
+        {collapsed && (
+          <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap pointer-events-none z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            {label}
+          </span>
         )}
       </motion.button>
 
       {/* Dropdown content */}
       {isDropdown && !collapsed && (
-        <AnimatePresence>
+        <AnimatePresence initial={false}>
           {isOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="overflow-hidden pl-2"
-              style={{ originY: 0 }}
+              animate={{
+                height: "auto",
+                opacity: 1,
+                transition: {
+                  height: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
+                  opacity: { duration: 0.15 },
+                },
+              }}
+              exit={{
+                height: 0,
+                opacity: 0,
+                transition: {
+                  height: { duration: 0.15, ease: [0.4, 0, 0.2, 1] },
+                  opacity: { duration: 0.1 },
+                },
+              }}
+              className="overflow-hidden"
             >
-              <div className="border-l-2 border-gray-100 pl-1 py-1 space-y-1">
-                {children}
-              </div>
+              <div className="mt-0.5 space-y-0.5 pb-0.5">{children}</div>
             </motion.div>
           )}
         </AnimatePresence>

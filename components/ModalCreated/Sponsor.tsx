@@ -38,7 +38,7 @@ export interface SponsorsProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedSponsor: any) => void;
-  visitorId: string;
+
   title: string; // รับค่า main || pre
   headerTitle: string; // ชื่อหัวข้อ
   selectedData: selectedDataProps | any;
@@ -81,7 +81,6 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
   formDataEdit,
   onClose,
   onUpdate,
-  visitorId,
   title,
   headerTitle,
   selectedData,
@@ -117,7 +116,7 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
   }, [isOpen, formDataEdit]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     // อนุญาตเฉพาะ A-Z, a-z และช่องว่าง (สำหรับชื่อ-นามสกุล)
@@ -132,7 +131,6 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!visitorId) return toast.warn("ไม่มีข้อมูล ID ประจำ Browser");
     if (!headerTitle) return toast.warn("ไม่มีข้อมูล header title");
     if (!formData.ce) return toast.warn("กรุณากรอกข้อมูล CE");
     if (!formData.fname) return toast.warn("กรุณากรอกข้อมูลชื่อ");
@@ -173,28 +171,28 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
         if (formDataEdit?.sponserBootId) {
           response = await Cmuvc_Edit_Sponsor_Boot(
             payload,
-            visitorId,
-            setOnUploadProgress
+
+            setOnUploadProgress,
           );
         } else {
           response = await Cmuvc_Create_Sponsor_Boot(
             payload,
-            visitorId,
-            setOnUploadProgress
+
+            setOnUploadProgress,
           );
         }
       } else {
         if (formDataEdit?.sponserParticipantId) {
           response = await Cmuvc_Edit_Sponsor(
             payload,
-            visitorId,
-            setOnUploadProgress
+
+            setOnUploadProgress,
           );
         } else {
           response = await Cmuvc_Create_Sponsor(
             payload,
-            visitorId,
-            setOnUploadProgress
+
+            setOnUploadProgress,
           );
         }
       }

@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { configTime } from "@/config/config_time";
 import PermissionGuard from "@/components/Guards/PermissionGuard";
+import TsarPage from "./pages/tsar/page";
 
 const submenuIdFinance = "e432a5bf-eda0-4638-848d-26df9194f57e";
 
@@ -197,72 +198,30 @@ export default function RegisterProjectDatabasePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col items-center justify-center min-h-[60vh] bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-8 mx-4 my-6"
+          className="mx-4 my-6 flex min-h-[60vh] flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-10 text-center"
         >
-          <motion.div
-            animate={{
-              y: [0, -5, 0],
-              rotate: [0, 2, -2, 0],
-            }}
-            transition={{
-              duration: 2,
-              ease: "easeInOut",
-              repeat: Infinity,
-            }}
-            className="mb-6 p-5 bg-white/80 backdrop-blur-sm rounded-full shadow-inner border border-gray-200"
-          >
-            <span className="material-symbols-outlined text-5xl text-gray-400">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 ring-1 ring-rose-100">
+            <span className="material-symbols-outlined text-3xl text-rose-500">
               search_off
             </span>
-          </motion.div>
+          </div>
 
-          <motion.h3
-            className="text-2xl font-semibold text-gray-700 mb-3 flex items-center"
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <span className="material-symbols-outlined text-red-400 mr-2">
-              error
-            </span>
-            ไม่พบโครงการหรือไม่มีสิทธิ์เข้าถึง
-          </motion.h3>
+          <h3 className="text-lg font-semibold text-slate-800 tracking-tight">
+            ไม่พบโครงการ หรือไม่มีสิทธิ์เข้าถึง
+          </h3>
 
-          <motion.p
-            className="text-gray-500 max-w-md text-center mb-6"
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            โครงการที่คุณค้นหาอาจไม่มีอยู่หรือคุณไม่มีสิทธิ์ในการเข้าถึง
-          </motion.p>
-
-          <motion.div
-            className="flex gap-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <button
-              onClick={() => router.replace("/dashboard")}
-              className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700  shadow-md flex items-center"
-            >
-              <span className="material-symbols-outlined mr-2">home</span>
-              กลับหน้าหลัก
-            </button>
-          </motion.div>
-
-          <motion.div
-            className="mt-8 text-sm text-gray-400 flex items-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <span className="material-symbols-outlined mr-1 text-base">
-              info
-            </span>
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+            โครงการที่คุณค้นหาอาจไม่มีอยู่ หรือคุณไม่มีสิทธิ์ในการเข้าถึง
             หากต้องการสิทธิ์การเข้าถึง โปรดติดต่อผู้ดูแลระบบ
-          </motion.div>
+          </p>
+
+          <button
+            onClick={() => router.replace("/dashboard")}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+          >
+            <span className="material-symbols-outlined text-base">home</span>
+            กลับหน้าหลัก
+          </button>
         </motion.div>
       );
     }
@@ -274,6 +233,8 @@ export default function RegisterProjectDatabasePage() {
         return <CmuvcPage />;
       case "vetrun":
         return <VetRunPage />;
+      case "tsar":
+        return <TsarPage />;
       default:
         return <div className="text-center py-10">โครงการทั่วไป</div>;
     }
@@ -285,17 +246,21 @@ export default function RegisterProjectDatabasePage() {
 
   if (loading)
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="relative  w-5 h-5">
-          <div className="w-5 h-5 border-2 border-gray-200 rounded-full"></div>
-          <div className="absolute top-0 left-0 w-5 h-5 border-2 border-t-[#325e8c] border-transparent rounded-full animate-spin"></div>
+      <div
+        role="status"
+        aria-live="polite"
+        className="flex flex-col items-center justify-center min-h-screen bg-slate-50"
+      >
+        <div className="relative w-10 h-10">
+          <div className="w-10 h-10 border-4 border-slate-200 rounded-full"></div>
+          <div className="absolute top-0 left-0 w-10 h-10 border-4 border-t-emerald-600 border-transparent rounded-full animate-spin"></div>
         </div>
         <motion.span
-          animate={{ opacity: [0.7, 1, 0.7] }}
+          animate={{ opacity: [0.6, 1, 0.6] }}
           transition={{ duration: 1.5, repeat: Infinity }}
-          className="text-[#325e8c] font-medium ml-2 text-sm"
+          className="text-slate-500 font-medium mt-3 text-sm tracking-wide"
         >
-          กำลังโหลด...
+          กำลังโหลดข้อมูล...
         </motion.span>
       </div>
     );
@@ -307,126 +272,95 @@ export default function RegisterProjectDatabasePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6"
+        className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6"
       >
-        <motion.div
-          animate={{
-            scale: [1, 1.05, 1],
-            rotate: [0, 5, -5, 0],
-          }}
-          transition={{
-            duration: 1.5,
-            ease: "easeInOut",
-            repeat: Infinity,
-            repeatType: "reverse",
-          }}
-          className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200"
-        >
-          <span className="material-symbols-outlined text-6xl text-gray-400">
-            folder_off
-          </span>
-        </motion.div>
-
-        <motion.h2
-          className="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <span className="material-symbols-outlined align-middle mr-2">
-            warning
-          </span>
-          ยังไม่ได้รับสิทธิเข้าถึงโปรเจกต์
-        </motion.h2>
-
-        <motion.p
-          className="text-gray-500 mb-8 max-w-md text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          คุณยังไม่มีสิทธิ์เข้าถึงโปรเจกต์ในส่วนทะเบียนนี้
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="flex flex-col sm:flex-row gap-4"
-        >
-          <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700  shadow-md flex items-center justify-center">
-            <span className="material-symbols-outlined mr-2">
-              contact_support
-            </span>
-            ติดต่อผู้ดูแลระบบ
-          </button>
-
-          <button
-            onClick={() => router.replace("/dashboard")}
-            className="px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50  shadow-sm flex items-center justify-center"
+        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-[0_20px_60px_-15px_rgba(15,23,42,0.15)]">
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{
+              duration: 2.2,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+            className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 ring-1 ring-amber-100"
           >
-            <span className="material-symbols-outlined mr-2">home</span>
-            กลับหน้าหลัก
-          </button>
-        </motion.div>
+            <span className="material-symbols-outlined text-3xl text-amber-500">
+              lock
+            </span>
+          </motion.div>
 
-        <motion.div
-          className="mt-12 text-gray-400 text-sm flex items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <span className="material-symbols-outlined mr-1 text-base">info</span>
-          หากคุณคิดว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
-        </motion.div>
+          <h2 className="text-xl font-semibold text-slate-800 tracking-tight">
+            ยังไม่ได้รับสิทธิ์เข้าถึงโปรเจกต์
+          </h2>
+
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">
+            คุณยังไม่มีสิทธิ์เข้าถึงโปรเจกต์ในส่วนทะเบียนนี้
+            หากคิดว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
+          </p>
+
+          <div className="mt-8 flex flex-col gap-2.5">
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500">
+              <span className="material-symbols-outlined text-base">
+                contact_support
+              </span>
+              ติดต่อผู้ดูแลระบบ
+            </button>
+
+            <button
+              onClick={() => router.replace("/dashboard")}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+            >
+              <span className="material-symbols-outlined text-base">home</span>
+              กลับหน้าหลัก
+            </button>
+          </div>
+        </div>
       </motion.div>
     );
   }
 
   const renderPageHome = () => {
     return (
-      <div className="min-h-screen flex flex-col relative">
+      <div className="relative flex min-h-screen flex-col bg-slate-50">
         <PermissionGuard submenuIdCode={submenuIdFinance} />
         {/* Header */}
-        <div className="bg-white shadow-sm">
+        <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full mx-auto text-gray-800 py-6 px-6 flex justify-between items-center"
+            className="mx-auto flex w-full items-center justify-between px-6 py-5"
           >
-            <div className="flex items-center space-x-3">
-              <span className="material-symbols-outlined text-blue-600 text-3xl">
-                folder_code
-              </span>
-              <h1 className="text-2xl font-semibold text-gray-800">
-                โครงการหรือสัมมนา
-              </h1>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 ring-1 ring-emerald-100">
+                <span className="material-symbols-outlined text-2xl text-emerald-600">
+                  folder_code
+                </span>
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+                  โครงการหรือสัมมนา
+                </h1>
+                <p className="text-xs text-slate-400">
+                  {displayProjects.length} โครงการทั้งหมด
+                </p>
+              </div>
             </div>
 
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`px-4 py-2 rounded-lg   flex items-center space-x-2 shadow-sm ${
+              aria-expanded={isSearchOpen}
+              aria-label={isSearchOpen ? "ปิดค้นหา" : "ค้นหาโครงการ"}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 ${
                 isSearchOpen
-                  ? "bg-red-100 text-red-600 hover:bg-red-200"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-emerald-600 text-white hover:bg-emerald-700"
               }`}
             >
-              {isSearchOpen ? (
-                <>
-                  <span className="material-symbols-outlined text-sm">
-                    close
-                  </span>
-                  <span className="text-sm">ปิดค้นหา</span>
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-sm">
-                    search
-                  </span>
-                  <span className="text-sm">ค้นหาโครงการ</span>
-                </>
-              )}
+              <span className="material-symbols-outlined text-base">
+                {isSearchOpen ? "close" : "search"}
+              </span>
+              <span>{isSearchOpen ? "ปิดค้นหา" : "ค้นหาโครงการ"}</span>
             </button>
           </motion.div>
 
@@ -440,8 +374,11 @@ export default function RegisterProjectDatabasePage() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="max-w-7xl mx-auto px-6 pb-6">
+            <div className="mx-auto max-w-7xl px-6 pb-5">
               <div className="relative">
+                <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                  search
+                </span>
                 <input
                   type="text"
                   value={searchQuery}
@@ -450,62 +387,82 @@ export default function RegisterProjectDatabasePage() {
                     handleSearch(e.target.value);
                   }}
                   placeholder="ค้นหาโครงการ (ชื่อหรือคำอธิบาย)..."
-                  className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm "
+                  aria-label="ค้นหาโครงการ"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                  search
-                </span>
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      handleSearch("");
+                    }}
+                    aria-label="ล้างคำค้นหา"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      close
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
         </div>
 
         {/* Project Grid */}
-        <div className="w-full mx-auto py-6">
+        <div className="mx-auto w-full flex-1 px-6 py-8">
           {currentProjects.length > 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              transition={{ delay: 0.15 }}
+              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
-              {currentProjects.map((project) => (
+              {currentProjects.map((project, index) => (
                 <motion.div
                   key={project.projectId}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  whileHover={{
-                    y: -8,
-                    boxShadow: "0 15px 30px -5px rgba(0,0,0,0.1)",
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: Math.min(index, 8) * 0.04,
                   }}
-                  className="bg-white shadow-md overflow-hidden cursor-pointer border border-gray-100 hover:border-blue-100  "
+                  whileHover={{ y: -4 }}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleRouter(project)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleRouter(project);
+                    }
+                  }}
+                  className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg hover:shadow-slate-200/60  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
                 >
-                  <div className="p-6 flex flex-col h-full">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-blue-50 rounded-lg">
-                        <span className="material-symbols-outlined text-blue-600 text-2xl">
+                  <div className="flex h-full flex-col p-6">
+                    <div className="mb-4 flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 ring-1 ring-emerald-100 transition-colors group-hover:bg-emerald-100">
+                        <span className="material-symbols-outlined text-xl text-emerald-600">
                           folder
                         </span>
                       </div>
-                      <h2 className="font-semibold text-gray-800 text-lg line-clamp-1">
+                      <h2 className="line-clamp-1 text-base font-semibold text-slate-800">
                         {project.name}
                       </h2>
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-3 mb-5 flex-grow">
+                    <p className="mb-5 line-clamp-3 flex-grow text-sm leading-relaxed text-slate-500">
                       {project.description || "ไม่มีคำอธิบาย"}
                     </p>
-                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                      <span className="text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full">
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                      <span className="rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-500">
                         {dayjs(project.createdAt).format(configTime.FULL_TIME)}
                       </span>
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1 transition-colors">
-                        <span>ดูรายละเอียด</span>
+                      <span className="flex items-center gap-1 text-sm font-medium text-emerald-600 transition-transform group-hover:translate-x-0.5">
+                        ดูรายละเอียด
                         <span className="material-symbols-outlined text-base">
                           arrow_forward
                         </span>
-                      </button>
+                      </span>
                     </div>
                   </div>
                 </motion.div>
@@ -516,17 +473,17 @@ export default function RegisterProjectDatabasePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col items-center justify-center py-16"
+              className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-20"
             >
-              <div className="p-6 bg-gray-50 rounded-full mb-6">
-                <span className="material-symbols-outlined text-gray-400 text-5xl">
+              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50">
+                <span className="material-symbols-outlined text-3xl text-slate-400">
                   folder_off
                 </span>
               </div>
-              <h3 className="text-xl font-medium text-gray-500 mb-2">
+              <h3 className="mb-1.5 text-base font-semibold text-slate-700">
                 {searchQuery ? "ไม่พบโครงการที่ค้นหา" : "ยังไม่มีโครงการ"}
               </h3>
-              <p className="text-gray-400 mb-6 text-center max-w-md">
+              <p className="mb-6 max-w-md text-center text-sm text-slate-400">
                 {searchQuery
                   ? "ลองใช้คำค้นหาอื่นหรือล้างการค้นหาเพื่อดูโครงการทั้งหมด"
                   : "เมื่อมีโครงการหรือสัมมนาใหม่ จะแสดงที่นี่"}
@@ -537,9 +494,9 @@ export default function RegisterProjectDatabasePage() {
                     setSearchQuery("");
                     handleSearch("");
                   }}
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
                 >
-                  <span className="material-symbols-outlined text-sm">
+                  <span className="material-symbols-outlined text-base">
                     refresh
                   </span>
                   <span>ล้างการค้นหา</span>
@@ -589,13 +546,17 @@ export default function RegisterProjectDatabasePage() {
     }
 
     return (
-      <div className="fixed bottom-6 right-6 flex items-center gap-1 bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-lg border border-gray-200">
+      <nav
+        aria-label="เปลี่ยนหน้าโครงการ"
+        className="fixed bottom-6 right-6 z-10 flex items-center gap-1 rounded-2xl border border-slate-200 bg-white/90 p-2 shadow-lg shadow-slate-200/60 backdrop-blur-md"
+      >
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
-          className="px-3 py-1 bg-gray-100 rounded-lg disabled:opacity-40 hover:bg-gray-200 transition-colors"
+          aria-label="หน้าก่อนหน้า"
+          className="rounded-xl px-2.5 py-2 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
         >
-          <span className="material-symbols-outlined text-sm">
+          <span className="material-symbols-outlined text-lg">
             chevron_left
           </span>
         </button>
@@ -603,14 +564,15 @@ export default function RegisterProjectDatabasePage() {
           <button
             key={index}
             onClick={() => typeof number === "number" && setCurrentPage(number)}
-            className={`px-3 py-1 rounded-lg min-w-[36px]  ${
-              number === currentPage
-                ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md"
-                : number === ellipsis
-                  ? "bg-transparent text-gray-400 cursor-default"
-                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-            }`}
+            aria-current={number === currentPage ? "page" : undefined}
             disabled={number === ellipsis}
+            className={`min-w-[36px] rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+              number === currentPage
+                ? "bg-emerald-600 text-white shadow-sm"
+                : number === ellipsis
+                  ? "cursor-default bg-transparent text-slate-300"
+                  : "text-slate-600 hover:bg-slate-100"
+            }`}
           >
             {number}
           </button>
@@ -620,13 +582,14 @@ export default function RegisterProjectDatabasePage() {
             setCurrentPage((prev) => Math.min(prev + 1, totalPages))
           }
           disabled={currentPage === totalPages}
-          className="px-3 py-1 bg-gray-100 rounded-lg disabled:opacity-40 hover:bg-gray-200 transition-colors"
+          aria-label="หน้าถัดไป"
+          className="rounded-xl px-2.5 py-2 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
         >
-          <span className="material-symbols-outlined text-sm">
+          <span className="material-symbols-outlined text-lg">
             chevron_right
           </span>
         </button>
-      </div>
+      </nav>
     );
   };
 
@@ -637,19 +600,21 @@ export default function RegisterProjectDatabasePage() {
       ) : matchedProject ? (
         renderProjectContent()
       ) : (
-        <div className="fixed inset-0 bg-white/95 flex flex-col items-center justify-center z-50">
-          {/* Simple but elegant spinner */}
-          <div className="relative w-16 h-16">
-            <div className="w-16 h-16 border-4 border-blue-100 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95"
+        >
+          <div className="relative h-12 w-12">
+            <div className="h-12 w-12 rounded-full border-4 border-slate-100"></div>
+            <div className="absolute left-0 top-0 h-12 w-12 animate-spin rounded-full border-4 border-t-emerald-600 border-transparent"></div>
           </div>
 
-          {/* Text with fade animation */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="mt-4 text-gray-700 font-medium"
+            className="mt-4 text-sm font-medium text-slate-500"
           >
             กำลังโหลด...
           </motion.p>

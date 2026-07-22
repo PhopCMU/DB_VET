@@ -9,7 +9,7 @@ export default function Footer() {
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 150, damping: 20 }}
-      className="fixed bottom-0 w-full bg-[#111829] text-white p-3 md:pl-64 border-t border-gray-700/50 backdrop-blur-sm z-10"
+      className=" bottom-0 w-full bg-[#111829] text-white p-3 md:pl-64 border-t border-gray-700/50 backdrop-blur-sm z-10"
     >
       <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-2">
         {/* Copyright text with subtle animation */}

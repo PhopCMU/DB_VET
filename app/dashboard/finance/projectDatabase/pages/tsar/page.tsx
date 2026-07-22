@@ -16,7 +16,7 @@ import { usePermission } from "@/app/context/UsePermission";
 const SUB_MENU_ID = "e432a5bf-eda0-4638-848d-26df9194f57e";
 const PROJECT_ID = "ee9ce62b-2e02-4682-9ecf-9f9b564ee5e3";
 
-export default function CmuvcPage() {
+export default function TsarPage() {
   const [selectedYear, setSelectedYear] = useState<Date | null>(new Date());
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -24,9 +24,7 @@ export default function CmuvcPage() {
   const [isUpdated, setIsUpdated] = useState<boolean>(false);
   const [dataParticipant, setDataParticipant] =
     useState<ApiResponseData | null>(null);
-  const [activeTab, setActiveTab] = useState<"pre" | "main" | "abstract">(
-    "pre",
-  );
+  const [activeTab, setActiveTab] = useState<"tsar">("tsar");
   const [onChangeFilePayment, setOnChangeFilePayment] =
     useState<ApiResponseData>();
   const [isModalFileOpen, setIsModalFileOpen] = useState<boolean>(false);
@@ -41,10 +39,7 @@ export default function CmuvcPage() {
   const fetchThemeTitle = async (date: Date): Promise<void> => {
     setIsLoading(true);
     try {
-      const data: any = await getParticipantList(
-        date || new Date(),
-        "participant",
-      );
+      const data: any = await getParticipantList(date || new Date(), "tsar");
 
       if (data !== undefined) {
         setDataParticipant(data.result);
@@ -88,16 +83,10 @@ export default function CmuvcPage() {
 
     // เลือกประเภทข้อมูลตาม activeTab
     switch (activeTab) {
-      case "pre":
+      case "tsar":
         result =
           dataParticipant.search_participant?.filter(
-            (p) => p.themeTitleId === "ce291973-8980-4a7c-9ab4-13a684aea33b",
-          ) || [];
-        break;
-      case "main":
-        result =
-          dataParticipant.search_participant?.filter(
-            (p) => p.themeTitleId === "522b5662-ebc8-45b7-bfaa-350d8fff66a4",
+            (p) => p.themeTitleId === "c23040e6-1f3c-41c8-9240-38b74281dd7f",
           ) || [];
         break;
 
@@ -120,37 +109,6 @@ export default function CmuvcPage() {
     setOnChangeFilePayment(participant);
     setIsModalFileOpen(true);
   };
-
-  // Theme colors based on activeTab
-  const getThemeColors = () => {
-    if (activeTab === "pre") {
-      return {
-        primary: "#009966", // primary color
-        light: "#ecfdf5", // light background
-        lightBg: "#e5f6f1", // adjusted light background for visual balance
-        textPrimary: "#007d5c", // text color
-        border: "#b3e5d7", // border color
-      };
-    } else if (activeTab === "main") {
-      return {
-        primary: "#5080b9", // primary color
-        light: "#e8eef6", // light background
-        lightBg: "#e8eef6", // adjusted light background for visual balance
-        textPrimary: "#3d5a8a", // text color
-        border: "#c5d3e6", // border color
-      };
-    }
-    return {
-      primary: "#009966",
-      light: "#ecfdf5",
-      lightBg: "#e5f6f1",
-      textPrimary: "#007d5c",
-      border: "#b3e5d7",
-    };
-  };
-
-  const themeColors = getThemeColors();
-
   return (
     <>
       <PermissionGuard submenuIdCode={SUB_MENU_ID} />
@@ -175,14 +133,7 @@ export default function CmuvcPage() {
           transition={{ duration: 0.3, ease: "easeOut" }}
           className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
         >
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ring-1"
-            style={{
-              backgroundColor: themeColors.light,
-              color: themeColors.primary,
-              borderColor: themeColors.border,
-            }}
-          >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#fceee2] text-[#f7a45d] ring-1 ring-[#fceee2]">
             <span className="material-symbols-rounded text-2xl">
               assessment
             </span>
@@ -192,7 +143,7 @@ export default function CmuvcPage() {
               Project Payment Slip Verification
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              จัดการและตรวจสอบหลักฐานการชำระเงินของโครงการ CMUVC
+              จัดการและตรวจสอบหลักฐานการชำระเงินของโครงการ TSAR
             </p>
           </div>
         </motion.div>
@@ -215,26 +166,13 @@ export default function CmuvcPage() {
                 className="flex-1"
               >
                 <h2 className="flex items-center gap-3 text-lg font-semibold text-slate-800">
-                  <span
-                    className="material-symbols-rounded rounded-lg p-2 text-2xl"
-                    style={{
-                      backgroundColor: themeColors.light,
-                      color: themeColors.primary,
-                    }}
-                  >
+                  <span className="material-symbols-rounded rounded-lg bg-[#fceee2] p-2 text-2xl text-[#f7a45d]">
                     groups
                   </span>
                   <span className="flex items-center gap-2">
                     รายชื่อทั้งหมด
-                    <span
-                      className="rounded-full px-2.5 py-1 text-xs font-medium ring-1"
-                      style={{
-                        backgroundColor: themeColors.light,
-                        color: themeColors.primary,
-                        borderColor: themeColors.border,
-                      }}
-                    >
-                      CMUVC{" "}
+                    <span className="rounded-full bg-[#fceee2] px-2.5 py-1 text-xs font-medium text-[#f7a45d] ring-1 ring-[#fceee2]">
+                      TSAR{" "}
                       {selectedYear ? selectedYear.getFullYear() + 543 : ""}
                     </span>
                   </span>
@@ -281,21 +219,7 @@ export default function CmuvcPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     aria-label="ค้นหาชื่อหรือรหัส"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-transparent focus:bg-white transition-all placeholder-slate-400 text-sm text-slate-700"
-                    style={
-                      {
-                        "--focus-ring-color": themeColors.primary,
-                      } as React.CSSProperties & {
-                        "--focus-ring-color": string;
-                      }
-                    }
-                    onFocus={(e) => {
-                      (e.target as HTMLInputElement).style.boxShadow =
-                        `0 0 0 3px ${themeColors.light}`;
-                    }}
-                    onBlur={(e) => {
-                      (e.target as HTMLInputElement).style.boxShadow = "none";
-                    }}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:bg-white transition-all placeholder-slate-400 text-sm text-slate-700"
                   />
                   {searchQuery && (
                     <motion.button
@@ -331,15 +255,11 @@ export default function CmuvcPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     aria-expanded={isOpen}
-                    className="gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors w-full sm:w-auto justify-center flex items-center"
-                    style={{
-                      backgroundColor:
-                        canView && canCreate && canEdit
-                          ? themeColors.primary
-                          : "#cbd5e1",
-                      color:
-                        canView && canCreate && canEdit ? "white" : "#64748b",
-                    }}
+                    className={`${
+                      canView && canCreate && canEdit
+                        ? "flex items-center bg-[#f7a45d] text-white hover:bg-[#f29240]"
+                        : "flex items-center bg-slate-200 text-slate-500 hover:bg-slate-300"
+                    } gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors w-full sm:w-auto justify-center`}
                     title={
                       canView && canCreate && canEdit
                         ? "ส่งออกข้อมูล"
@@ -391,54 +311,24 @@ export default function CmuvcPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="flex items-center gap-4 rounded-2xl p-5"
-                style={{
-                  backgroundColor: activeTab === "pre" ? "#ecfdf5" : "#e8eef6",
-                  borderColor: activeTab === "pre" ? "#b3e5d7" : "#c5d3e6",
-                  borderWidth: "1px",
-                }}
+                className="flex items-center gap-4 rounded-2xl border border-[#fceee2] bg-[#fceee2]/60 p-5"
               >
-                <div
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1"
-                  style={{
-                    borderColor: activeTab === "pre" ? "#b3e5d7" : "#c5d3e6",
-                  }}
-                >
-                  <span
-                    className="material-symbols-outlined text-2xl"
-                    style={{
-                      color: themeColors.primary,
-                    }}
-                  >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-[#fceee2]">
+                  <span className="material-symbols-outlined text-2xl text-[#f7a45d]">
                     check_circle
                   </span>
                 </div>
                 <div>
-                  <h3
-                    className="text-xs font-medium tracking-wide"
-                    style={{
-                      color: themeColors.textPrimary,
-                    }}
-                  >
+                  <h3 className="text-xs font-medium tracking-wide text-[#f7a45d]/80">
                     สำเร็จ
                   </h3>
-                  <p
-                    className="text-2xl font-bold"
-                    style={{
-                      color: themeColors.primary,
-                    }}
-                  >
+                  <p className="text-2xl font-bold text-[#d97e38]">
                     {
                       filteredUsers().filter((user) => user.payments === true)
                         .length
                     }
                   </p>
-                  <p
-                    className="text-xs"
-                    style={{
-                      color: themeColors.textPrimary,
-                    }}
-                  >
+                  <p className="text-xs text-[#f7a45d]/70">
                     การชำระเงินเสร็จสมบูรณ์
                   </p>
                 </div>
@@ -449,24 +339,24 @@ export default function CmuvcPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.05 }}
-                className="flex items-center gap-4 rounded-2xl border border-amber-100 bg-amber-50/60 p-5"
+                className="flex items-center gap-4 rounded-2xl border border-[#fceee2] bg-[#fceee2]/60 p-5"
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-amber-100">
-                  <span className="material-symbols-outlined text-2xl text-amber-600">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-[#fceee2]">
+                  <span className="material-symbols-outlined text-2xl text-[#f7a45d]">
                     pending
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xs font-medium tracking-wide text-amber-700/80">
+                  <h3 className="text-xs font-medium tracking-wide text-[#f7a45d]/80">
                     รอตรวจสอบ
                   </h3>
-                  <p className="text-2xl font-bold text-amber-900">
+                  <p className="text-2xl font-bold text-[#d97e38]">
                     {
                       filteredUsers().filter((user) => user.payments === false)
                         .length
                     }
                   </p>
-                  <p className="text-xs text-amber-600/70">
+                  <p className="text-xs text-[#f7a45d]/70">
                     รอการยืนยันการชำระเงิน
                   </p>
                 </div>
@@ -475,37 +365,15 @@ export default function CmuvcPage() {
 
             {/* Info Box */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div
-                className="mb-4 flex items-start gap-2 rounded-xl p-4"
-                style={{
-                  backgroundColor: themeColors.light,
-                  borderLeftColor: themeColors.primary,
-                  borderLeftWidth: "4px",
-                }}
-              >
-                <span
-                  className="material-symbols-outlined mt-0.5"
-                  style={{
-                    color: themeColors.primary,
-                  }}
-                >
+              <div className="mb-4 flex items-start gap-2 rounded-xl border-l-4 border-[#f7a45d] bg-[#fceee2] p-4">
+                <span className="material-symbols-outlined mt-0.5 text-[#f7a45d]">
                   info
                 </span>
                 <div>
-                  <h3
-                    className="text-sm font-medium"
-                    style={{
-                      color: themeColors.textPrimary,
-                    }}
-                  >
+                  <h3 className="text-sm font-medium text-[#d97e38]">
                     คำแนะนำการใช้งาน
                   </h3>
-                  <p
-                    className="mt-1 text-sm"
-                    style={{
-                      color: themeColors.textPrimary,
-                    }}
-                  >
+                  <p className="mt-1 text-sm text-[#f7a45d]/80">
                     เลือกกลุ่มที่ต้องการ
                   </p>
                 </div>
@@ -517,42 +385,26 @@ export default function CmuvcPage() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4 md:my-6"
+              className="grid grid-cols-1 sm:grid-cols-1 gap-3 my-4 md:my-6"
             >
-              {[
-                { id: "pre", label: "Pre Congress", icon: "event_upcoming" },
-                {
-                  id: "main",
-                  label: "Main Conference",
-                  icon: "calendar_month",
-                },
-              ].map((tab: any) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium border transition-colors"
-                  style={{
-                    backgroundColor:
+              {[{ id: "tsar", label: "TSAR", icon: "event_upcoming" }].map(
+                (tab: any) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-medium border transition-colors ${
                       activeTab === tab.id
-                        ? tab.id === "pre"
-                          ? "#009966"
-                          : "#5080b9"
-                        : "white",
-                    color: activeTab === tab.id ? "white" : "#4b5563",
-                    borderColor:
-                      activeTab === tab.id
-                        ? tab.id === "pre"
-                          ? "#009966"
-                          : "#5080b9"
-                        : "#e2e8f0",
-                  }}
-                >
-                  <span className="material-symbols-outlined text-lg">
-                    {tab.icon}
-                  </span>
-                  <span className="whitespace-nowrap">{tab.label}</span>
-                </button>
-              ))}
+                        ? "border-[#f7a45d] bg-[#f7a45d] text-white shadow-sm "
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">
+                      {tab.icon}
+                    </span>
+                    <span className="whitespace-nowrap">{tab.label}</span>
+                  </button>
+                ),
+              )}
             </motion.div>
             {/* Loading State */}
             {isLoading ? (
@@ -563,12 +415,7 @@ export default function CmuvcPage() {
                 aria-live="polite"
                 className="flex flex-col items-center justify-center py-12"
               >
-                <span
-                  className="material-symbols-rounded text-4xl animate-spin mb-3"
-                  style={{
-                    color: themeColors.primary,
-                  }}
-                >
+                <span className="material-symbols-rounded text-4xl text-[#f7a45d] animate-spin mb-3">
                   progress_activity
                 </span>
                 <p className="text-slate-500 text-sm">กำลังโหลดข้อมูล...</p>
@@ -648,20 +495,7 @@ export default function CmuvcPage() {
                       filteredUsers().map((user: any, index: number) => (
                         <tr
                           key={index}
-                          className="transition-colors grid grid-cols-2 md:table-row gap-2 p-3 md:p-0"
-                          style={{
-                            backgroundColor: "transparent",
-                          }}
-                          onMouseEnter={(e) => {
-                            (
-                              e.currentTarget as HTMLTableRowElement
-                            ).style.backgroundColor = themeColors.light;
-                          }}
-                          onMouseLeave={(e) => {
-                            (
-                              e.currentTarget as HTMLTableRowElement
-                            ).style.backgroundColor = "transparent";
-                          }}
+                          className="hover:bg-emerald-50/60 transition-colors grid grid-cols-2 md:table-row gap-2 p-3 md:p-0"
                         >
                           <td className="whitespace-nowrap py-4 pl-4 pr-3">
                             <div className="flex items-center space-x-3">
@@ -685,14 +519,7 @@ export default function CmuvcPage() {
                                   {user.email}
                                 </div>
                               </div>
-                              <div
-                                className="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center font-medium text-sm ring-1"
-                                style={{
-                                  backgroundColor: themeColors.light,
-                                  color: themeColors.primary,
-                                  borderColor: themeColors.border,
-                                }}
-                              >
+                              <div className="h-8 w-8 bg-[#fceee2] rounded-full flex items-center justify-center text-[#f7a45d] font-medium text-sm ring-1 ring-[#fceee2]">
                                 {index + 1}
                               </div>
                             </div>
@@ -818,20 +645,11 @@ export default function CmuvcPage() {
                           {user.statusAbstract && (
                             <td className="whitespace-nowrap px-3 py-4 text-sm">
                               <span
-                                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1"
-                                style={
+                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
                                   user?.statusAbstract === "Accepted"
-                                    ? {
-                                        backgroundColor: themeColors.light,
-                                        color: themeColors.primary,
-                                        borderColor: themeColors.border,
-                                      }
-                                    : {
-                                        backgroundColor: "#fef2f2",
-                                        color: "#dc2626",
-                                        borderColor: "#fecaca",
-                                      }
-                                }
+                                    ? "bg-[#fceee2] text-[#f7a45d] ring-1 ring-[#fceee2]"
+                                    : "bg-rose-50 text-rose-600 ring-1 ring-rose-100"
+                                }`}
                               >
                                 <span className="material-symbols-rounded text-sm">
                                   {user?.statusAbstract === "Accepted"
@@ -847,20 +665,11 @@ export default function CmuvcPage() {
 
                           <td className="whitespace-nowrap px-3 py-4 text-sm">
                             <span
-                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1"
-                              style={
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
                                 user?.payments
-                                  ? {
-                                      backgroundColor: themeColors.light,
-                                      color: themeColors.primary,
-                                      borderColor: themeColors.border,
-                                    }
-                                  : {
-                                      backgroundColor: "#fef2f2",
-                                      color: "#dc2626",
-                                      borderColor: "#fecaca",
-                                    }
-                              }
+                                  ? "bg-[#fceee2] text-[#f7a45d] ring-1 ring-[#fceee2]"
+                                  : "bg-rose-50 text-rose-600 ring-1 ring-rose-100"
+                              }`}
                             >
                               <span className="material-symbols-rounded text-sm">
                                 {user.payments ? "check" : "priority_high"}
@@ -905,7 +714,7 @@ export default function CmuvcPage() {
                                 }}
                                 className={`group flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                                   canView && canEdit
-                                    ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 hover:border-emerald-200 cursor-pointer"
+                                    ? "text-[#f7a45d] bg-[#fceee2] hover:bg-[#fadcc7] border border-[#fceee2] hover:border-[#f7a45d] cursor-pointer"
                                     : "text-slate-400 bg-slate-50 border border-slate-200 cursor-not-allowed"
                                 }`}
                                 disabled={!canView || !canEdit}

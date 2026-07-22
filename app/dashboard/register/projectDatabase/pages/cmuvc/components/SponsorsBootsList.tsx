@@ -2,7 +2,6 @@ import { usePermission } from "@/app/context/UsePermission";
 import { useUser } from "@/app/context/UserContext";
 import { Delete_boot_Sponsor } from "@/app/routers/cmuvc/DeleteRouter";
 import { GetBoots, GetSelector } from "@/app/routers/cmuvc/GetRouter";
-import { ConfirmModal } from "@/components/ConfirmModal/ConfirmModal";
 import PermissionGuard from "@/components/Guards/PermissionGuard";
 import Loading from "@/components/Loadings/Loading";
 import { LoadingModal } from "@/components/Modal";
@@ -30,7 +29,6 @@ export default function SponsorsBootsList() {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [onUploadProgress, setOnUploadProgress] = useState<number>(0);
-  const [isModalConfirmOpen, setIsModalConfirmOpen] = useState<boolean>(false);
   const [isOpenDropdownExport, setIsOpenDropdownExport] =
     useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
@@ -51,26 +49,13 @@ export default function SponsorsBootsList() {
 
   if (loading) return <Loading />;
 
-  const fetchData = async (date: Date, visitorId: string) => {
-    if (!visitorId) return toast.warn("ไม่มีข้อมูล ID ประจำ Browser");
+  const fetchData = async (date: Date) => {
     if (!date) return toast.warn("ไม่มีข้อมูลวันที่");
 
     try {
-      const response = await GetBoots(date, visitorId);
+      const response = await GetBoots(date);
       if (!response.success) return toast.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
       setSponsorsBoots(response.data);
-      if (response.data.length > 0) {
-        toast.success(
-          `เรียกดูข้อมูลสปอนเซอร์เรียบร้อยแล้ว จํานวน ${response.data.length} รายการ`,
-          {
-            autoClose: 500,
-          },
-        );
-      } else {
-        toast.warning("ไม่พบข้อมูลสปอนเซอร์", {
-          autoClose: 500,
-        });
-      }
     } catch (error) {
       toast.error("Failed to fetch theme data:", { autoClose: 2000 });
     }
@@ -91,10 +76,9 @@ export default function SponsorsBootsList() {
     });
   }, [sponsorsBoots, searchTerm]);
 
-  const fetchSelectorData = async (visitorId: string) => {
-    if (!visitorId) return toast.warn("ไม่มีข้อมูล ID ประจำ Browser");
+  const fetchSelectorData = async () => {
     try {
-      const response = await GetSelector(visitorId);
+      const response = await GetSelector();
       if (!response.success)
         return toast.error("เกิดข้อผิดพลาดในการดึงข้อมูล Selector");
       setSetectorData(response.data);
@@ -106,17 +90,21 @@ export default function SponsorsBootsList() {
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
-    if (visitorId && selectedYear) {
+    if (selectedYear) {
       debounceTimer.current = setTimeout(() => {
-        fetchData(new Date() || selectedYear, visitorId); // Make sure to use the correct date
-        fetchSelectorData(visitorId);
+        fetchData(selectedYear || new Date()); // Make sure to use the correct date
+        fetchSelectorData();
       }, 1000);
     }
   }, [visitorId, selectedYear]);
 
   const handerChangeYear = async (date: Date) => {
     setSelectedYear(date);
-    await fetchData(date || new Date(), visitorId);
+    await fetchData(date || new Date());
+  };
+
+  const handleCancelDelete = () => {
+    setId("");
   };
 
   const handleConfirmDelete = async () => {
@@ -139,8 +127,8 @@ export default function SponsorsBootsList() {
         return toast.error(resopnse.message, { autoClose: 2000 });
 
       toast.success("ลบข้อมูลเรียบร้อยแล้ว", { autoClose: 2000 });
-      await fetchData(selectedYear || new Date(), visitorId);
-      setIsModalConfirmOpen(false);
+      await fetchData(selectedYear || new Date());
+      setId("");
       setIsLoading(false);
     } catch (error: any) {
       toast.error("Failed:" + error.message, { autoClose: 2000 });
@@ -166,30 +154,17 @@ export default function SponsorsBootsList() {
     <>
       <PermissionGuard submenuIdCode={SUB_MENU_ID} />
       {/* Modal && Loading */}
-      <ConfirmModal
-        isOpen={isModalConfirmOpen}
-        onClose={() => setIsModalConfirmOpen(false)}
-        onConfirm={handleConfirmDelete}
-        title="ยืนยันการลบข้อมูล"
-        message="ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้ คุณแน่ใจหรือไม่?"
-        confirmText="ลบข้อมูล"
-        confirmColor="red"
-        cancelText="ยกเลิก"
-        icon="warning"
-      />
-
       <ModalCreateSponsor
         isOpen={isOpenCreateSponsor}
         onClose={() => setIsOpenCreateSponsor(false)}
         title={title}
         headerTitle={"sponsor"}
-        visitorId={visitorId}
         selectedData={setectorData}
         formDataEdit={formDataEdit || null}
         onUpdate={async (updatedSponsor: any) => {
           if (!updatedSponsor)
             return toast.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
-          await fetchData(selectedYear || new Date(), visitorId);
+          await fetchData(selectedYear || new Date());
           toast.success("เพิ่มข้อมูลเรียบร้อยแล้ว");
           setIsOpenCreateSponsor(false);
           setFormDataEdit(null);
@@ -658,71 +633,102 @@ export default function SponsorsBootsList() {
 
                           <td className="whitespace-nowrap flex flex-col justify-between gap-5 px-3 py-4">
                             <div className="inline-flex item-center justify-end gap-2">
-                              {/* แก้ไข */}
-                              <button
-                                onClick={() => {
-                                  if (canView && canEdit) {
-                                    setIsOpenCreateSponsor(true);
-                                    setTitle("แก้ไขข้อมูล");
-                                    setFormDataEdit(user); // handleOpenModalEdit(user);
-                                  }
-                                }}
-                                className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
-                                  canView && canEdit
-                                    ? "text-yellow-600 bg-gradient-to-b from-yellow-50 to-yellow-100/50 hover:from-yellow-100 hover:to-yellow-200/70 hover:text-yellow-700 border border-yellow-200/60 hover:border-yellow-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
-                                    : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
-                                }`}
-                                disabled={!canView || !canEdit}
-                              >
-                                <span
-                                  className={`material-symbols-rounded text-base transition-transform duration-300 ${
-                                    canView && canEdit
-                                      ? "group-hover:scale-110"
-                                      : ""
-                                  }`}
-                                >
-                                  {canView && canEdit ? "edit" : "edit_off"}
-                                </span>
-                                <span className="">
-                                  {canView && canEdit
-                                    ? "แก้ไข"
-                                    : "ไม่ได้รับสิทธิ์"}
-                                </span>
-                              </button>
+                              {id ===
+                              (user.sponserParticipantId ||
+                                user.sponserBootId) ? (
+                                <>
+                                  {/* ยืนยันลบ */}
+                                  <button
+                                    onClick={handleConfirmDelete}
+                                    className="group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-medium text-white bg-red-600 hover:bg-red-700 shadow-inner cursor-pointer"
+                                  >
+                                    <span className="material-symbols-rounded text-base group-hover:scale-110 transition-transform duration-300">
+                                      delete_forever
+                                    </span>
+                                    <span>ยืนยันลบ</span>
+                                  </button>
 
-                              {/* ลบ */}
-                              <button
-                                onClick={() => {
-                                  setIsModalConfirmOpen(true);
-                                  setId(
-                                    user.sponserParticipantId ||
-                                      user.sponserBootId,
-                                  );
-                                }}
-                                className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
-                                  canView && canDelete
-                                    ? "text-red-600 bg-gradient-to-b from-red-50 to-red-100/50 hover:from-red-100 hover:to-red-200/70 hover:text-red-700 border border-red-200/60 hover:border-red-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
-                                    : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
-                                }`}
-                                disabled={!canView || !canDelete}
-                              >
-                                <span
-                                  className={`material-symbols-rounded text-base transition-transform duration-300 ${
-                                    canView && canDelete
-                                      ? "group-hover:scale-110"
-                                      : ""
-                                  }`}
-                                >
-                                  {canView && canDelete
-                                    ? "delete"
-                                    : "delete_forever"}
-                                </span>
-                                <span className="">
-                                  {canView && canDelete
-                                    ? "ลบ"
-                                    : "ไม่ได้รับสิทธิ์"}
-                                </span>
-                              </button>
+                                  {/* ยกเลิก */}
+                                  <button
+                                    onClick={handleCancelDelete}
+                                    className="group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 shadow-inner cursor-pointer"
+                                  >
+                                    <span className="material-symbols-rounded text-base group-hover:scale-110 transition-transform duration-300">
+                                      close
+                                    </span>
+                                    <span>ยกเลิก</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {/* แก้ไข */}
+                                  <button
+                                    onClick={() => {
+                                      if (canView && canEdit) {
+                                        setIsOpenCreateSponsor(true);
+                                        setTitle("แก้ไขข้อมูล");
+                                        setFormDataEdit(user); // handleOpenModalEdit(user);
+                                      }
+                                    }}
+                                    className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
+                                      canView && canEdit
+                                        ? "text-yellow-600 bg-gradient-to-b from-yellow-50 to-yellow-100/50 hover:from-yellow-100 hover:to-yellow-200/70 hover:text-yellow-700 border border-yellow-200/60 hover:border-yellow-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
+                                        : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
+                                    }`}
+                                    disabled={!canView || !canEdit}
+                                  >
+                                    <span
+                                      className={`material-symbols-rounded text-base transition-transform duration-300 ${
+                                        canView && canEdit
+                                          ? "group-hover:scale-110"
+                                          : ""
+                                      }`}
+                                    >
+                                      {canView && canEdit ? "edit" : "edit_off"}
+                                    </span>
+                                    <span className="">
+                                      {canView && canEdit
+                                        ? "แก้ไข"
+                                        : "ไม่ได้รับสิทธิ์"}
+                                    </span>
+                                  </button>
+
+                                  {/* ลบ */}
+                                  <button
+                                    onClick={() => {
+                                      if (canView && canDelete) {
+                                        setId(
+                                          user.sponserParticipantId ||
+                                            user.sponserBootId,
+                                        );
+                                      }
+                                    }}
+                                    className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
+                                      canView && canDelete
+                                        ? "text-red-600 bg-gradient-to-b from-red-50 to-red-100/50 hover:from-red-100 hover:to-red-200/70 hover:text-red-700 border border-red-200/60 hover:border-red-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
+                                        : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
+                                    }`}
+                                    disabled={!canView || !canDelete}
+                                  >
+                                    <span
+                                      className={`material-symbols-rounded text-base transition-transform duration-300 ${
+                                        canView && canDelete
+                                          ? "group-hover:scale-110"
+                                          : ""
+                                      }`}
+                                    >
+                                      {canView && canDelete
+                                        ? "delete"
+                                        : "delete_forever"}
+                                    </span>
+                                    <span className="">
+                                      {canView && canDelete
+                                        ? "ลบ"
+                                        : "ไม่ได้รับสิทธิ์"}
+                                    </span>
+                                  </button>
+                                </>
+                              )}
                             </div>
                             {/* Date Update */}
                             <div className="flex justify-end gap-2 text-xs text-gray-400">

@@ -21,11 +21,11 @@ const headers = {
 };
 export const Delete_Vets = async (
   accountId: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(accountId),
-    secretKey
+    secretKey,
   ).toString();
 
   const encodedEncryptedData = encodeURIComponent(encryptedData);
@@ -38,7 +38,7 @@ export const Delete_Vets = async (
 
     const response = await axios.delete<ApiResponse>(
       `${config.URL_API}/role/api/v1/vet/delete`,
-      { headers, params: { encryptedData: encodedEncryptedData } }
+      { headers, params: { encryptedData: encodedEncryptedData } },
     );
 
     await waitForCompletion();
@@ -64,11 +64,11 @@ export const Delete_Vets = async (
 
 export const Delete_Students = async (
   studentId: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(studentId),
-    secretKey
+    secretKey,
   ).toString();
 
   const encodedEncryptedData = encodeURIComponent(encryptedData);
@@ -81,7 +81,7 @@ export const Delete_Students = async (
 
     const response = await axios.delete<ApiResponse>(
       `${config.URL_API}/role/api/v1/student/delete`,
-      { headers, params: { encryptedData: encodedEncryptedData } }
+      { headers, params: { encryptedData: encodedEncryptedData } },
     );
 
     await waitForCompletion();
@@ -108,11 +108,11 @@ export const Delete_Students = async (
 export const Delete_Personnel = async (
   personnelId: string,
   visitorId: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(personnelId),
-    secretKey
+    secretKey,
   ).toString();
 
   const encodedEncryptedData = encodeURIComponent(encryptedData);
@@ -133,7 +133,7 @@ export const Delete_Personnel = async (
           "Content-Type": "application/json",
           "X-Visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     await waitForCompletion();
@@ -159,9 +159,8 @@ export const Delete_Personnel = async (
 
 export const Delete_Participant = async (
   participantId: string,
-  visitorId: string,
   title: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const payload = {
     participantId,
@@ -174,7 +173,7 @@ export const Delete_Participant = async (
 
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    secretKey
+    secretKey,
   ).toString();
 
   const encodedEncryptedData = encodeURIComponent(encryptedData);
@@ -193,9 +192,8 @@ export const Delete_Participant = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-Visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     await waitForCompletion();
@@ -223,12 +221,12 @@ export const Delete_Abstract = async (
   abstractId: string,
   visitorId: string,
 
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const apiUrl = "/role/abstract/delete";
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(abstractId),
-    secretKey
+    secretKey,
   ).toString();
 
   const encodedEncryptedData = encodeURIComponent(encryptedData);
@@ -249,7 +247,7 @@ export const Delete_Abstract = async (
           "Content-Type": "application/json",
           "X-Visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     await waitForCompletion();
@@ -275,14 +273,13 @@ export const Delete_Abstract = async (
 
 export const Delete_Sponsor = async (
   sponsorsParticipantsId: string,
-  visitorId: string,
 
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const apiUrl = "/role/api/v1/sponsor/delete";
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(sponsorsParticipantsId),
-    secretKey
+    secretKey,
   ).toString();
 
   const encodedEncryptedData = encodeURIComponent(encryptedData);
@@ -301,9 +298,8 @@ export const Delete_Sponsor = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-Visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     await waitForCompletion();
@@ -328,12 +324,12 @@ export const Delete_boot_Sponsor = async (
   sponsorBootId: string,
   visitorId: string,
 
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const apiUrl = "/role/api/v1/sponsor/boot/delete";
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(sponsorBootId),
-    secretKey
+    secretKey,
   ).toString();
 
   const encodedEncryptedData = encodeURIComponent(encryptedData);
@@ -354,7 +350,7 @@ export const Delete_boot_Sponsor = async (
           "Content-Type": "application/json",
           "X-Visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     await waitForCompletion();

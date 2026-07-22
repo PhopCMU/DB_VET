@@ -14,6 +14,8 @@ export interface CmuvcVet {
   prefix: string;
   fname: string;
   lname: string;
+  fname_EN?: string;
+  lname_EN?: string;
   number_ce?: string | number | readonly string[] | undefined;
   createAt: string;
   updateAt: string | null;
@@ -132,4 +134,27 @@ export interface Food {
   foodType: string;
   createAt: string;
   updateAt: string;
+}
+
+export interface ParticipantRequest {
+  themeTitleId: string;
+  categoryId: string;
+  packagesId: string;
+  packageOneDay: string;
+  selectdayId: string;
+  ce: string;
+  prefix: string;
+  fname: string;
+  lname: string;
+  phone: string;
+  email: string;
+  organization: string;
+  country: string;
+  address: string;
+  subDistrict: string;
+  district: string;
+  province: string;
+  zipCode: string;
+  foodId: string;
+  Imagepayment: Blob | File;
 }

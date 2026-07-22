@@ -24,7 +24,9 @@ import {
   BookOpen,
   ShieldCheck,
   Smartphone,
+  ArrowUpFromLine,
 } from "lucide-react";
+import packageVsersion from "../package.json";
 
 export default function Home() {
   const [alertMessage, setAlertMessage] = useState<boolean>(true);
@@ -105,10 +107,6 @@ export default function Home() {
           <motion.div
             key={i}
             className="absolute w-1.5 h-1.5 bg-blue-400/30 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
             animate={{
               y: [null, -30, 0, 30, 0],
               opacity: [0.3, 0.6, 0.3],
@@ -184,8 +182,8 @@ export default function Home() {
                           <Image
                             src={images.logo}
                             alt="Logo CMUVC"
-                            width={120}
-                            height={120}
+                            width={110}
+                            height={110}
                             className="object-cover rounded-full border-4 border-white/90 shadow-xl"
                             priority
                           />
@@ -198,9 +196,9 @@ export default function Home() {
                         transition={{ delay: 0.2, duration: 0.6 }}
                         className="mt-4 text-center"
                       >
-                        <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#325e8c] via-[#9878b0] to-[#325e8c] bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-x">
+                        <div className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-[#325e8c] via-[#9878b0] to-[#325e8c] bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient-x">
                           ระบบสารสนเทศ
-                        </h1>
+                        </div>
                         <div className="flex items-center justify-center gap-2 mt-1">
                           <motion.div
                             animate={{ rotate: 360 }}
@@ -365,7 +363,7 @@ export default function Home() {
                                 alt="CMU Logo"
                                 width={32}
                                 height={32}
-                                className="object-contain transition-all duration-300 group-hover:brightness-0 group-hover:invert"
+                                className="object-contain transition-all duration-300 rounded-full group-hover:scale-110 group-hover:rotate-12"
                               />
                             </motion.div>
                             <span className="font-semibold transition-colors duration-300">
@@ -648,6 +646,33 @@ export default function Home() {
                       {index < 2 && (
                         <div className="w-px h-3 bg-stone-200 ml-1.5" />
                       )}
+                    </motion.div>
+                  ))}
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.6 }}
+                  className="flex items-center justify-center gap-4 bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/40"
+                >
+                  {[
+                    {
+                      icon: ArrowUpFromLine,
+                      label: packageVsersion.version,
+                      color: "text-emerald-500",
+                    },
+                  ].map((item, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + index * 0.1 }}
+                      className="flex items-center gap-1.5"
+                    >
+                      <item.icon className={`w-3.5 h-3.5 ${item.color}`} />
+                      <span className="text-xs text-stone-500">
+                        {item.label}
+                      </span>
                     </motion.div>
                   ))}
                 </motion.div>

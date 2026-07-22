@@ -11,8 +11,85 @@ import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import { configTime } from "@/config/config_time";
 import PermissionGuard from "@/components/Guards/PermissionGuard";
+import {
+  FolderCode,
+  Search,
+  X,
+  Folder,
+  ArrowRight,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+  AlertCircle,
+  SearchX,
+  Home,
+  Info,
+  HelpCircle,
+  Sparkles,
+} from "lucide-react";
 
 const submenuIdRegister = "9b940740-d1e9-4a41-af0d-4e1faa90464d";
+
+// Card gradient themes for visual variety
+const cardGradients = [
+  {
+    from: "from-violet-500",
+    to: "to-purple-600",
+    bg: "bg-violet-50",
+    icon: "text-violet-600",
+    border: "border-violet-200",
+  },
+  {
+    from: "from-blue-500",
+    to: "to-cyan-600",
+    bg: "bg-blue-50",
+    icon: "text-blue-600",
+    border: "border-blue-200",
+  },
+  {
+    from: "from-emerald-500",
+    to: "to-teal-600",
+    bg: "bg-emerald-50",
+    icon: "text-emerald-600",
+    border: "border-emerald-200",
+  },
+  {
+    from: "from-rose-500",
+    to: "to-pink-600",
+    bg: "bg-rose-50",
+    icon: "text-rose-600",
+    border: "border-rose-200",
+  },
+  {
+    from: "from-amber-500",
+    to: "to-orange-600",
+    bg: "bg-amber-50",
+    icon: "text-amber-600",
+    border: "border-amber-200",
+  },
+  {
+    from: "from-indigo-500",
+    to: "to-blue-600",
+    bg: "bg-indigo-50",
+    icon: "text-indigo-600",
+    border: "border-indigo-200",
+  },
+  {
+    from: "from-fuchsia-500",
+    to: "to-purple-600",
+    bg: "bg-fuchsia-50",
+    icon: "text-fuchsia-600",
+    border: "border-fuchsia-200",
+  },
+  {
+    from: "from-cyan-500",
+    to: "to-blue-600",
+    bg: "bg-cyan-50",
+    icon: "text-cyan-600",
+    border: "border-cyan-200",
+  },
+];
 
 export default function RegisterProjectDatabasePage() {
   const router = useRouter();
@@ -42,7 +119,7 @@ export default function RegisterProjectDatabasePage() {
   const [database, setDatabase] = useState<string | null>(module);
   const [projectId, setProjectId] = useState<string | null>(project);
   const [matchedProject, setMatchedProject] = useState<ProjectModel | null>(
-    null
+    null,
   );
 
   // ✅ หา project ที่ตรงกับ projectId + database (รองรับ isSuperAdmin)
@@ -63,7 +140,7 @@ export default function RegisterProjectDatabasePage() {
           (perm: any) =>
             perm.userId === userData.userId &&
             perm.submenuId === submenuIdRegister &&
-            perm.view === true
+            perm.view === true,
         )
       );
     });
@@ -87,7 +164,7 @@ export default function RegisterProjectDatabasePage() {
           (perm: any) =>
             perm.userId === userData?.userId &&
             perm.submenuId === submenuIdRegister &&
-            perm.view === true
+            perm.view === true,
         )
       );
     });
@@ -140,8 +217,8 @@ export default function RegisterProjectDatabasePage() {
               (perm: any) =>
                 perm.userId === userData?.userId &&
                 perm.submenuId === submenuIdRegister &&
-                perm.view === true
-            )
+                perm.view === true,
+            ),
           );
         }
 
@@ -164,7 +241,7 @@ export default function RegisterProjectDatabasePage() {
     const results = projectData.filter(
       (project) =>
         project.name.toLowerCase().includes(text.toLowerCase()) ||
-        project.description.toLowerCase().includes(text.toLowerCase())
+        project.description.toLowerCase().includes(text.toLowerCase()),
     );
     setFilteredProjects(results);
     setCurrentPage(1);
@@ -178,13 +255,13 @@ export default function RegisterProjectDatabasePage() {
   const indexOfFirstProject = indexOfLastProject - projectsPerPage;
   const currentProjects = displayProjects.slice(
     indexOfFirstProject,
-    indexOfLastProject
+    indexOfLastProject,
   );
 
   // ✅ ไปยังโครงการ (ลบ timestamp เพื่อความสะอาดของ URL)
   const handleRouter = (project: ProjectModel) => {
     router.push(
-      `/dashboard/register/projectDatabase?Project=${project.projectId}&Module=${project.database}`
+      `/dashboard/register/projectDatabase?Project=${project.projectId}&Module=${project.database}`,
     );
   };
 
@@ -210,9 +287,7 @@ export default function RegisterProjectDatabasePage() {
             }}
             className="mb-6 p-5 bg-white/80 backdrop-blur-sm rounded-full shadow-inner border border-gray-200"
           >
-            <span className="material-symbols-outlined text-5xl text-gray-400">
-              search_off
-            </span>
+            <SearchX className="w-12 h-12 text-gray-400" />
           </motion.div>
 
           <motion.h3
@@ -221,9 +296,7 @@ export default function RegisterProjectDatabasePage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <span className="material-symbols-outlined text-red-400 mr-2">
-              error
-            </span>
+            <AlertCircle className="w-6 h-6 text-red-400 mr-2" />
             ไม่พบโครงการหรือไม่มีสิทธิ์เข้าถึง
           </motion.h3>
 
@@ -244,9 +317,9 @@ export default function RegisterProjectDatabasePage() {
           >
             <button
               onClick={() => router.replace("/dashboard")}
-              className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700  shadow-md flex items-center"
+              className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md flex items-center transition-all"
             >
-              <span className="material-symbols-outlined mr-2">home</span>
+              <Home className="w-5 h-5 mr-2" />
               กลับหน้าหลัก
             </button>
           </motion.div>
@@ -257,9 +330,7 @@ export default function RegisterProjectDatabasePage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <span className="material-symbols-outlined mr-1 text-base">
-              info
-            </span>
+            <Info className="w-4 h-4 mr-1" />
             หากต้องการสิทธิ์การเข้าถึง โปรดติดต่อผู้ดูแลระบบ
           </motion.div>
         </motion.div>
@@ -327,20 +398,16 @@ export default function RegisterProjectDatabasePage() {
           }}
           className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200"
         >
-          <span className="material-symbols-outlined text-6xl text-gray-400">
-            folder_off
-          </span>
+          <Folder className="w-16 h-16 text-gray-400" />
         </motion.div>
 
         <motion.h2
-          className="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center"
+          className="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <span className="material-symbols-outlined align-middle mr-2">
-            warning
-          </span>
+          <AlertTriangle className="w-7 h-7 mr-2" />
           ยังไม่ได้รับสิทธิเข้าถึงโปรเจกต์
         </motion.h2>
 
@@ -359,18 +426,16 @@ export default function RegisterProjectDatabasePage() {
           transition={{ delay: 0.4 }}
           className="flex flex-col sm:flex-row gap-4"
         >
-          <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700  shadow-md flex items-center justify-center">
-            <span className="material-symbols-outlined mr-2">
-              contact_support
-            </span>
+          <button className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 shadow-md flex items-center justify-center transition-all">
+            <HelpCircle className="w-5 h-5 mr-2" />
             ติดต่อผู้ดูแลระบบ
           </button>
 
           <button
             onClick={() => router.replace("/dashboard")}
-            className="px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50  shadow-sm flex items-center justify-center"
+            className="px-6 py-3 bg-white text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm flex items-center justify-center transition-all"
           >
-            <span className="material-symbols-outlined mr-2">home</span>
+            <Home className="w-5 h-5 mr-2" />
             กลับหน้าหลัก
           </button>
         </motion.div>
@@ -381,7 +446,7 @@ export default function RegisterProjectDatabasePage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          <span className="material-symbols-outlined mr-1 text-base">info</span>
+          <Info className="w-4 h-4 mr-1" />
           หากคุณคิดว่าเป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
         </motion.div>
       </motion.div>
@@ -402,35 +467,37 @@ export default function RegisterProjectDatabasePage() {
             className="w-full mx-auto text-gray-800 py-6 px-6 flex justify-between items-center"
           >
             <div className="flex items-center space-x-3">
-              <span className="material-symbols-outlined text-blue-600 text-3xl">
-                folder_code
-              </span>
-              <h1 className="text-2xl font-semibold text-gray-800">
-                โครงการหรือสัมมนา
-              </h1>
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                <FolderCode className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  โครงการหรือสัมมนา
+                </h1>
+                <p className="text-xs text-gray-500 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  Project Management System
+                </p>
+              </div>
             </div>
 
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`px-4 py-2 rounded-lg  flex items-center space-x-2 shadow-sm ${
+              className={`px-5 py-2.5 rounded-xl flex items-center space-x-2 shadow-md transition-all ${
                 isSearchOpen
-                  ? "bg-red-100 text-red-600 hover:bg-red-200"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  ? "bg-red-100 text-red-600 hover:bg-red-200 hover:shadow-lg"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg"
               }`}
             >
               {isSearchOpen ? (
                 <>
-                  <span className="material-symbols-outlined text-sm">
-                    close
-                  </span>
-                  <span className="text-sm">ปิดค้นหา</span>
+                  <X className="w-4 h-4" />
+                  <span className="text-sm font-medium">ปิดค้นหา</span>
                 </>
               ) : (
                 <>
-                  <span className="material-symbols-outlined text-sm">
-                    search
-                  </span>
-                  <span className="text-sm">ค้นหาโครงการ</span>
+                  <Search className="w-4 h-4" />
+                  <span className="text-sm font-medium">ค้นหาโครงการ</span>
                 </>
               )}
             </button>
@@ -456,11 +523,9 @@ export default function RegisterProjectDatabasePage() {
                     handleSearch(e.target.value);
                   }}
                   placeholder="ค้นหาโครงการ (ชื่อหรือคำอธิบาย)..."
-                  className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm "
+                  className="w-full p-4 pl-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
                 />
-                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                  search
-                </span>
+                <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
             </div>
           </motion.div>
@@ -475,47 +540,66 @@ export default function RegisterProjectDatabasePage() {
               transition={{ delay: 0.2 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              {currentProjects.map((project) => (
-                <motion.div
-                  key={project.projectId}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  whileHover={{
-                    y: -8,
-                    boxShadow: "0 15px 30px -5px rgba(0,0,0,0.1)",
-                  }}
-                  className="bg-white shadow-md overflow-hidden cursor-pointer border border-gray-100 hover:border-blue-100 "
-                  onClick={() => handleRouter(project)}
-                >
-                  <div className="p-6 flex flex-col h-full">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-blue-50 rounded-lg">
-                        <span className="material-symbols-outlined text-blue-600 text-2xl">
-                          folder
-                        </span>
+              {currentProjects.map((project, index) => {
+                const gradient = cardGradients[index % cardGradients.length];
+                return (
+                  <motion.div
+                    key={project.projectId}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    whileHover={{
+                      y: -8,
+                      boxShadow: "0 20px 40px -10px rgba(0,0,0,0.15)",
+                    }}
+                    className={`bg-white shadow-lg rounded-2xl overflow-hidden cursor-pointer border-2 ${gradient.border} hover:shadow-2xl transition-all group`}
+                    onClick={() => handleRouter(project)}
+                  >
+                    {/* Gradient Header */}
+                    <div
+                      className={`h-2 bg-gradient-to-r ${gradient.from} ${gradient.to}`}
+                    />
+
+                    <div className="p-6 flex flex-col h-full">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <motion.div
+                          whileHover={{ rotate: 5, scale: 1.1 }}
+                          className={`p-3 ${gradient.bg} rounded-xl shadow-md group-hover:shadow-lg transition-all`}
+                        >
+                          <Folder
+                            className={`w-6 h-6 ${gradient.icon}`}
+                            strokeWidth={2.5}
+                          />
+                        </motion.div>
+                        <h2 className="font-bold text-gray-800 text-lg line-clamp-1 group-hover:text-gray-900 transition-colors">
+                          {project.name}
+                        </h2>
                       </div>
-                      <h2 className="font-semibold text-gray-800 text-lg line-clamp-1">
-                        {project.name}
-                      </h2>
-                    </div>
-                    <p className="text-sm text-gray-600 line-clamp-3 mb-5 flex-grow">
-                      {project.description || "ไม่มีคำอธิบาย"}
-                    </p>
-                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                      <span className="text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full">
-                        {dayjs(project.createdAt).format(configTime.FULL_TIME)}
-                      </span>
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1 transition-colors">
-                        <span>ดูรายละเอียด</span>
-                        <span className="material-symbols-outlined text-base">
-                          arrow_forward
+
+                      <p className="text-sm text-gray-600 line-clamp-3 mb-5 flex-grow leading-relaxed">
+                        {project.description || "ไม่มีคำอธิบาย"}
+                      </p>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                        <span
+                          className={`text-xs text-gray-600 ${gradient.bg} px-3 py-1.5 rounded-lg font-medium`}
+                        >
+                          {dayjs(project.createdAt).format(
+                            configTime.FULL_TIME,
+                          )}
                         </span>
-                      </button>
+                        <motion.button
+                          whileHover={{ x: 3 }}
+                          className={`${gradient.icon} hover:opacity-80 text-sm font-semibold flex items-center space-x-1 transition-all`}
+                        >
+                          <span>ดูรายละเอียด</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </motion.button>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </motion.div>
           ) : (
             <motion.div
@@ -524,12 +608,18 @@ export default function RegisterProjectDatabasePage() {
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center justify-center py-16"
             >
-              <div className="p-6 bg-gray-50 rounded-full mb-6">
-                <span className="material-symbols-outlined text-gray-400 text-5xl">
-                  folder_off
-                </span>
-              </div>
-              <h3 className="text-xl font-medium text-gray-500 mb-2">
+              <motion.div
+                animate={{ y: [0, -5, 0] }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl mb-6 shadow-md"
+              >
+                <Folder className="w-14 h-14 text-gray-400" />
+              </motion.div>
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">
                 {searchQuery ? "ไม่พบโครงการที่ค้นหา" : "ยังไม่มีโครงการ"}
               </h3>
               <p className="text-gray-400 mb-6 text-center max-w-md">
@@ -538,18 +628,18 @@ export default function RegisterProjectDatabasePage() {
                   : "เมื่อมีโครงการหรือสัมมนาใหม่ จะแสดงที่นี่"}
               </p>
               {searchQuery && (
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     setSearchQuery("");
                     handleSearch("");
                   }}
-                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center space-x-2"
                 >
-                  <span className="material-symbols-outlined text-sm">
-                    refresh
-                  </span>
-                  <span>ล้างการค้นหา</span>
-                </button>
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="font-medium">ล้างการค้นหา</span>
+                </motion.button>
               )}
             </motion.div>
           )}
@@ -579,7 +669,7 @@ export default function RegisterProjectDatabasePage() {
           totalPages - 3,
           totalPages - 2,
           totalPages - 1,
-          totalPages
+          totalPages,
         );
       } else {
         pageNumbers.push(
@@ -589,49 +679,51 @@ export default function RegisterProjectDatabasePage() {
           currentPage,
           currentPage + 1,
           ellipsis,
-          totalPages
+          totalPages,
         );
       }
     }
 
     return (
-      <div className="fixed bottom-6 right-6 flex items-center gap-1 bg-white/80 backdrop-blur-md p-3 rounded-xl shadow-lg border border-gray-200">
-        <button
+      <div className="fixed bottom-6 right-6 flex items-center gap-2 bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-2xl border border-gray-200">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
-          className="px-3 py-1 bg-gray-100 rounded-lg disabled:opacity-40 hover:bg-gray-200 transition-colors"
+          className="px-3 py-2 bg-gray-100 rounded-xl disabled:opacity-40 hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-600 hover:text-white transition-all"
         >
-          <span className="material-symbols-outlined text-sm">
-            chevron_left
-          </span>
-        </button>
+          <ChevronLeft className="w-4 h-4" />
+        </motion.button>
         {pageNumbers.map((number, index) => (
-          <button
+          <motion.button
             key={index}
+            whileHover={number !== ellipsis ? { scale: 1.1 } : {}}
+            whileTap={number !== ellipsis ? { scale: 0.95 } : {}}
             onClick={() => typeof number === "number" && setCurrentPage(number)}
-            className={`px-3 py-1 rounded-lg min-w-[36px]  ${
+            className={`px-4 py-2 rounded-xl min-w-[40px] font-medium transition-all ${
               number === currentPage
-                ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md"
+                ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg scale-110"
                 : number === ellipsis
-                ? "bg-transparent text-gray-400 cursor-default"
-                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  ? "bg-transparent text-gray-400 cursor-default"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-700 hover:shadow-md"
             }`}
             disabled={number === ellipsis}
           >
             {number}
-          </button>
+          </motion.button>
         ))}
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() =>
             setCurrentPage((prev) => Math.min(prev + 1, totalPages))
           }
           disabled={currentPage === totalPages}
-          className="px-3 py-1 bg-gray-100 rounded-lg disabled:opacity-40 hover:bg-gray-200 transition-colors"
+          className="px-3 py-2 bg-gray-100 rounded-xl disabled:opacity-40 hover:bg-gradient-to-r hover:from-blue-500 hover:to-indigo-600 hover:text-white transition-all"
         >
-          <span className="material-symbols-outlined text-sm">
-            chevron_right
-          </span>
-        </button>
+          <ChevronRight className="w-4 h-4" />
+        </motion.button>
       </div>
     );
   };

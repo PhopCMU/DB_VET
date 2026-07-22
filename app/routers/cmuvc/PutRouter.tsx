@@ -31,12 +31,12 @@ const headers = {
 
 export const putUpdateAbstactText = async (
   payload: AbstractDataModel,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   try {
     const encryptedData = CryptoJS.AES.encrypt(
       JSON.stringify(payload),
-      secretKey
+      secretKey,
     ).toString();
 
     const encryptedDataEncoded = encodeURIComponent(encryptedData);
@@ -48,11 +48,11 @@ export const putUpdateAbstactText = async (
         headers,
         onUploadProgress: (progressEvent) => {
           const percent = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
+            (progressEvent.loaded * 100) / (progressEvent.total || 1),
           );
           setUploadProgress(percent);
         },
-      }
+      },
     );
 
     return response.data;
@@ -72,12 +72,12 @@ export const putUpdateAbstactText = async (
 
 export const putUpdateAbstactStatus = async (
   payload: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   try {
     const encryptedData = CryptoJS.AES.encrypt(
       JSON.stringify(payload),
-      secretKey
+      secretKey,
     ).toString();
 
     const encryptedDataEncoded = encodeURIComponent(encryptedData);
@@ -89,11 +89,11 @@ export const putUpdateAbstactStatus = async (
         headers,
         onUploadProgress: (progressEvent) => {
           const percent = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
+            (progressEvent.loaded * 100) / (progressEvent.total || 1),
           );
           setUploadProgress(percent);
         },
-      }
+      },
     );
 
     return response.data;
@@ -113,12 +113,12 @@ export const putUpdateAbstactStatus = async (
 
 export const putUpdate_Participant_Abstract_Image = async (
   payload: { id: string; type: string },
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   try {
     const encryptedData = CryptoJS.AES.encrypt(
       JSON.stringify(payload),
-      secretKey
+      secretKey,
     ).toString();
 
     const encryptedDataEncoded = encodeURIComponent(encryptedData);
@@ -133,11 +133,11 @@ export const putUpdate_Participant_Abstract_Image = async (
         headers,
         onUploadProgress: (progressEvent) => {
           const percent = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
+            (progressEvent.loaded * 100) / (progressEvent.total || 1),
           );
           setUploadProgress(percent);
         },
-      }
+      },
     );
 
     return response.data;
@@ -157,12 +157,12 @@ export const putUpdate_Participant_Abstract_Image = async (
 
 export const PutEditVetlist = async (
   payload: CmuvcVet,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   // CryptoJS
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    secretKey
+    secretKey,
   ).toString();
 
   // encodeURIComponent
@@ -184,7 +184,7 @@ export const PutEditVetlist = async (
           encryptedData: encryptedDataEncoded,
         },
         headers,
-      }
+      },
     );
 
     // Wait for the request to complete and the progress simulation to finish
@@ -218,12 +218,12 @@ export const PutEditVetlist = async (
 
 export const PutEditStudentlist = async (
   payload: CmuvcStudents,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   // CryptoJS
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    secretKey
+    secretKey,
   ).toString();
 
   // encodeURIComponent
@@ -245,7 +245,7 @@ export const PutEditStudentlist = async (
           encryptedData: encryptedDataEncoded,
         },
         headers,
-      }
+      },
     );
 
     // Wait for the request to complete and the progress simulation to finish
@@ -280,12 +280,12 @@ export const PutEditStudentlist = async (
 export const PutEditPersonlist = async (
   payload: CmuvcPersonnel,
   visitorId: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   // CryptoJS
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    secretKey
+    secretKey,
   ).toString();
 
   // encodeURIComponent
@@ -311,7 +311,7 @@ export const PutEditPersonlist = async (
           "Content-Type": "application/json",
           "X-visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     // Wait for the request to complete and the progress simulation to finish
@@ -345,9 +345,9 @@ export const PutEditPersonlist = async (
 
 export const PutEditParticipant = async (
   data: CmuvcParticipant,
-  visitorId: string,
+
   title: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const payload = {
     data,
@@ -361,7 +361,7 @@ export const PutEditParticipant = async (
   // CryptoJS
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    secretKey
+    secretKey,
   ).toString();
 
   // encodeURIComponent
@@ -385,9 +385,8 @@ export const PutEditParticipant = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     // Wait for the request to complete and the progress simulation to finish
@@ -421,12 +420,12 @@ export const PutEditParticipant = async (
 
 export const Cmuvc_Edit_Sponsor = async (
   payload: any,
-  visitorId: string,
-  setUploadProgress: (progress: number) => void
+
+  setUploadProgress: (progress: number) => void,
 ) => {
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    secretKey
+    secretKey,
   ).toString();
 
   // encodeURIComponent
@@ -446,9 +445,8 @@ export const Cmuvc_Edit_Sponsor = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     await waitForCompletion();
@@ -470,12 +468,11 @@ export const Cmuvc_Edit_Sponsor = async (
 };
 export const Cmuvc_Edit_Sponsor_Boot = async (
   payload: any,
-  visitorId: string,
-  setUploadProgress: (progress: number) => void
+  setUploadProgress: (progress: number) => void,
 ) => {
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    secretKey
+    secretKey,
   ).toString();
 
   // encodeURIComponent
@@ -495,9 +492,8 @@ export const Cmuvc_Edit_Sponsor_Boot = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-visitor-Id": visitorId,
         },
-      }
+      },
     );
 
     await waitForCompletion();

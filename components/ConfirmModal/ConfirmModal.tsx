@@ -61,22 +61,22 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Background overlay */}
+          {/* Background overlay - อยู่หน้าสุดเพื่อคุมทั้งหน้าจอ */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-30 bg-black/50 bg-opacity-50"
+            className="fixed inset-0 z-[9999] bg-black/50 bg-opacity-50"
             onClick={onClose}
           />
 
-          {/* Modal container */}
-          <div className="fixed inset-0 z-30 flex items-center justify-center p-4">
+          {/* Modal container - เด้งลงมาจากด้านบนสุด เหมือน alert */}
+          <div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 pt-16 sm:pt-24">
             <motion.div
-              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              initial={{ opacity: 0, y: -80, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              exit={{ opacity: 0, y: -60, scale: 0.95 }}
               transition={{
                 type: "spring",
                 damping: 20,

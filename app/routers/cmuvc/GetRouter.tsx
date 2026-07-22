@@ -11,12 +11,6 @@ interface ApiResponse {
 
 const GENERIC_ERROR_MESSAGE = "ข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์";
 
-/**
- * Builds request headers with the stored auth token.
- * NOTE: token source (localStorage) is a repo-wide pattern; migrating to
- * HttpOnly cookies requires a broader, app-level change and is out of
- * scope for this file (see .agents/.reports/CMUVC-GetRouter-Security-Review.md).
- */
 const getAuthHeaders = (extra?: Record<string, string>) => ({
   Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
   "Content-Type": "application/json",
@@ -26,19 +20,11 @@ const getAuthHeaders = (extra?: Record<string, string>) => ({
 const isValidDate = (date: unknown): date is Date =>
   date instanceof Date && !Number.isNaN(date.getTime());
 
-/**
- * Trims and caps free-text input length to reduce malformed/oversized
- * payloads. Backend must still validate/escape values before use.
- */
 const sanitizeText = (value?: string, maxLength = 200): string | undefined => {
   if (typeof value !== "string") return undefined;
   return value.trim().slice(0, maxLength) || undefined;
 };
 
-/**
- * Normalizes error handling so raw backend/error internals are never
- * leaked to the caller/UI, while still logging details for debugging.
- */
 const safeErrorResponse = (
   error: unknown,
   context: string,
@@ -162,8 +148,13 @@ export const getParticipantList = async (
     const headers = getAuthHeaders();
     const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
     const year = date.getFullYear();
+    const titleSanitized = sanitizeText(title);
+    const payload = {
+      year,
+      title: titleSanitized,
+    };
     const encryptedData = CryptoJS.AES.encrypt(
-      JSON.stringify(year),
+      JSON.stringify(payload),
       secretKey,
     ).toString();
 
@@ -232,15 +223,9 @@ export const GetPersonnel = async (): Promise<ApiResponse> => {
   }
 };
 
-export const GetPackage = async (
-  visitorId: string,
-  title?: string,
-): Promise<ApiResponse> => {
+export const GetPackage = async (title?: string): Promise<ApiResponse> => {
   try {
-    if (!visitorId || typeof visitorId !== "string") {
-      throw new Error("Missing or invalid visitorId");
-    }
-    const headers = getAuthHeaders({ "X-Visitor-Id": visitorId });
+    const headers = getAuthHeaders();
     const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
     const payload = {
       title: sanitizeText(title),
@@ -267,16 +252,13 @@ export const GetPackage = async (
 
 export const GetParticipantList_Main = async (
   date: Date,
-  visitorId: string,
   title?: string,
 ): Promise<ApiResponse> => {
   try {
     if (!isValidDate(date)) {
       throw new Error("Missing or invalid date");
     }
-    if (!visitorId || typeof visitorId !== "string") {
-      throw new Error("Missing or invalid visitorId");
-    }
+
     const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
     const payload = {
       year: date.getFullYear(),
@@ -292,7 +274,7 @@ export const GetParticipantList_Main = async (
     const response = await axios.get(
       `${config.URL_API}/role/api/v1/participant/list`,
       {
-        headers: getAuthHeaders({ "X-Visitor-Id": visitorId }),
+        headers: getAuthHeaders(),
         params: {
           encryptedData: encodedEncryptedData,
         },
@@ -305,14 +287,10 @@ export const GetParticipantList_Main = async (
   }
 };
 
-export const GetSelector = async (visitorId: string): Promise<ApiResponse> => {
+export const GetSelector = async (): Promise<ApiResponse> => {
   try {
-    if (!visitorId || typeof visitorId !== "string") {
-      throw new Error("Missing or invalid visitorId");
-    }
-
     const response = await axios.get(`${config.URL_API}/role/api/v1/selector`, {
-      headers: getAuthHeaders({ "X-Visitor-Id": visitorId }),
+      headers: getAuthHeaders(),
     });
 
     return response.data;
@@ -323,16 +301,14 @@ export const GetSelector = async (visitorId: string): Promise<ApiResponse> => {
 
 export const GetSponsorParticipantList = async (
   date: Date,
-  visitorId: string,
+
   title?: string,
 ): Promise<ApiResponse> => {
   try {
     if (!isValidDate(date)) {
       throw new Error("Missing or invalid date");
     }
-    if (!visitorId || typeof visitorId !== "string") {
-      throw new Error("Missing or invalid visitorId");
-    }
+
     const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
     const payload = {
       year: date.getFullYear(),
@@ -348,7 +324,7 @@ export const GetSponsorParticipantList = async (
     const response = await axios.get(
       `${config.URL_API}/role/api/v1/sponsors/list`,
       {
-        headers: getAuthHeaders({ "X-Visitor-Id": visitorId }),
+        headers: getAuthHeaders(),
         params: {
           encryptedData: encodedEncryptedData,
         },
@@ -361,17 +337,12 @@ export const GetSponsorParticipantList = async (
   }
 };
 
-export const GetBoots = async (
-  date: Date,
-  visitorId: string,
-): Promise<ApiResponse> => {
+export const GetBoots = async (date: Date): Promise<ApiResponse> => {
   try {
     if (!isValidDate(date)) {
       throw new Error("Missing or invalid date");
     }
-    if (!visitorId || typeof visitorId !== "string") {
-      throw new Error("Missing or invalid visitorId");
-    }
+
     const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
     const payload = {
       year: date.getFullYear(),
@@ -386,7 +357,7 @@ export const GetBoots = async (
     const response = await axios.get(
       `${config.URL_API}/role/api/v1/sponsor/boots/list`,
       {
-        headers: getAuthHeaders({ "X-Visitor-Id": visitorId }),
+        headers: getAuthHeaders(),
         params: {
           encryptedData: encodedEncryptedData,
         },
@@ -432,5 +403,22 @@ export const GetCheckin = async (
     return response.data;
   } catch (error) {
     return safeErrorResponse(error, "GetCheckin");
+  }
+};
+
+export const getUserDataFromAPI = async (
+  year: string,
+): Promise<ApiResponse> => {
+  try {
+    const response = await axios.get(
+      `${config.URL_API}/role/api/v1/user/data`,
+      {
+        params: { year },
+        headers: getAuthHeaders(),
+      },
+    );
+    return response.data;
+  } catch (error) {
+    return safeErrorResponse(error, "getUserDataFromAPI");
   }
 };

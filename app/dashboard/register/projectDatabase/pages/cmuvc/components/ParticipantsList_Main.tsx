@@ -3,7 +3,6 @@ import { useUser } from "@/app/context/UserContext";
 import { CmuvcParticipant } from "@/app/model/cmuvc/dashboardModel";
 import { Delete_Participant } from "@/app/routers/cmuvc/DeleteRouter";
 import { GetParticipantList_Main } from "@/app/routers/cmuvc/GetRouter";
-import { ConfirmModal } from "@/components/ConfirmModal/ConfirmModal";
 import PermissionGuard from "@/components/Guards/PermissionGuard";
 import { LoadingModal } from "@/components/Modal";
 import { ModalEditParticipant_Main } from "@/components/ModalEdit/CmuvcMainModal";
@@ -33,14 +32,12 @@ export default function ParticipantsList_Main() {
     useState<boolean>(false);
   const [isUpdated, setIsUpdated] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [isModalConfirmOpen, setIsModalConfirmOpen] = useState<boolean>(false);
   const [participantId, setParticipantId] = useState<string | undefined>("");
   const [onUploadProgress, setOnUploadProgress] = useState<number>(0);
   const [formData, setFormData] = useState<CmuvcParticipant>();
   const hasData = useRef(false);
 
   if (!userData) return loading;
-  const visitorId = data?.visitorId ?? "";
 
   const { canView, canCreate, canEdit, canDelete } = usePermission(
     SUB_MENU_ID,
@@ -55,7 +52,7 @@ export default function ParticipantsList_Main() {
     try {
       const response = await GetParticipantList_Main(
         date || new Date(),
-        visitorId,
+
         headerTitle,
       );
 
@@ -107,6 +104,10 @@ export default function ParticipantsList_Main() {
     setIsModalOpen(true);
   };
 
+  const handleCancelDelete = () => {
+    setParticipantId("");
+  };
+
   const handleConfirmDelete = async () => {
     if (!participantId) return toast.warn("ไม่มีมีข้อมูลไอดีของผู้เข้าร่วม");
 
@@ -116,13 +117,12 @@ export default function ParticipantsList_Main() {
     try {
       const response = await Delete_Participant(
         participantId,
-        visitorId,
         headerTitle,
         setOnUploadProgress,
       );
       if (!response.success)
         return toast.error("Message: เกิดข้อผิดพลาดในการลบข้อมูล");
-      setIsModalConfirmOpen(false);
+      setParticipantId("");
       await fetchDataParticipantsMain(selectedYear || new Date());
       setIsLoading(false);
       toast.success(`ลบข้อมูลผู้เข้าร่วมสำเร็จ`);
@@ -143,25 +143,12 @@ export default function ParticipantsList_Main() {
         title="แก้ไขข้อมูลผู้เข้าร่วม"
         formData={formData as any}
         headerTitle={headerTitle}
-        visitorId={data?.visitorId || ""}
         onUpdate={async (updateds: CmuvcParticipant) => {
           if (!updateds) return toast.error("ไม่สามารถดำเนินการแก้ไขข้อมูลได้");
           toast.success("แก้ไขเมนูสำเร็จ");
           setIsUpdated(true);
           setIsModalOpen(false);
         }}
-      />
-
-      <ConfirmModal
-        isOpen={isModalConfirmOpen}
-        onClose={() => setIsModalConfirmOpen(false)}
-        onConfirm={handleConfirmDelete}
-        title="ยืนยันการลบข้อมูล"
-        message="ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้ คุณแน่ใจหรือไม่?"
-        confirmText="ลบข้อมูล"
-        confirmColor="red"
-        cancelText="ยกเลิก"
-        icon="warning"
       />
 
       <LoadingModal isOpen={isLoading} progress={onUploadProgress} />
@@ -619,66 +606,95 @@ export default function ParticipantsList_Main() {
 
                           <td className="whitespace-nowrap flex flex-col justify-between gap-5 px-3 py-4">
                             <div className="inline-flex item-center justify-end gap-2">
-                              {/* แก้ไข */}
-                              <button
-                                onClick={() => {
-                                  if (canView && canEdit) {
-                                    handleOpenModalEdit(user);
-                                  }
-                                }}
-                                className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
-                                  canView && canEdit
-                                    ? "text-yellow-600 bg-gradient-to-b from-yellow-50 to-yellow-100/50 hover:from-yellow-100 hover:to-yellow-200/70 hover:text-yellow-700 border border-yellow-200/60 hover:border-yellow-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
-                                    : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
-                                }`}
-                                disabled={!canView || !canEdit}
-                              >
-                                <span
-                                  className={`material-symbols-rounded text-base transition-transform duration-300 ${
-                                    canView && canEdit
-                                      ? "group-hover:scale-110"
-                                      : ""
-                                  }`}
-                                >
-                                  {canView && canEdit ? "edit" : "edit_off"}
-                                </span>
-                                <span className="transition-all duration-300">
-                                  {canView && canEdit
-                                    ? "แก้ไข"
-                                    : "ไม่ได้รับสิทธิ์"}
-                                </span>
-                              </button>
+                              {participantId === user?.participantId ? (
+                                <>
+                                  {/* ยืนยันลบ */}
+                                  <button
+                                    onClick={handleConfirmDelete}
+                                    className="group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-medium text-white bg-red-600 hover:bg-red-700 shadow-inner cursor-pointer"
+                                  >
+                                    <span className="material-symbols-rounded text-base group-hover:scale-110 transition-transform duration-300">
+                                      delete_forever
+                                    </span>
+                                    <span>ยืนยันลบ</span>
+                                  </button>
 
-                              {/* ลบ */}
-                              <button
-                                onClick={() => {
-                                  setIsModalConfirmOpen(true);
-                                  setParticipantId(user?.participantId);
-                                }}
-                                className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
-                                  canView && canDelete
-                                    ? "text-red-600 bg-gradient-to-b from-red-50 to-red-100/50 hover:from-red-100 hover:to-red-200/70 hover:text-red-700 border border-red-200/60 hover:border-red-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
-                                    : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
-                                }`}
-                                disabled={!canView || !canDelete}
-                              >
-                                <span
-                                  className={`material-symbols-rounded text-base transition-transform duration-300 ${
-                                    canView && canDelete
-                                      ? "group-hover:scale-110"
-                                      : ""
-                                  }`}
-                                >
-                                  {canView && canDelete
-                                    ? "delete"
-                                    : "delete_forever"}
-                                </span>
-                                <span className="transition-all duration-300">
-                                  {canView && canDelete
-                                    ? "ลบ"
-                                    : "ไม่ได้รับสิทธิ์"}
-                                </span>
-                              </button>
+                                  {/* ยกเลิก */}
+                                  <button
+                                    onClick={handleCancelDelete}
+                                    className="group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 shadow-inner cursor-pointer"
+                                  >
+                                    <span className="material-symbols-rounded text-base group-hover:scale-110 transition-transform duration-300">
+                                      close
+                                    </span>
+                                    <span>ยกเลิก</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {/* แก้ไข */}
+                                  <button
+                                    onClick={() => {
+                                      if (canView && canEdit) {
+                                        handleOpenModalEdit(user);
+                                      }
+                                    }}
+                                    className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
+                                      canView && canEdit
+                                        ? "text-yellow-600 bg-gradient-to-b from-yellow-50 to-yellow-100/50 hover:from-yellow-100 hover:to-yellow-200/70 hover:text-yellow-700 border border-yellow-200/60 hover:border-yellow-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
+                                        : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
+                                    }`}
+                                    disabled={!canView || !canEdit}
+                                  >
+                                    <span
+                                      className={`material-symbols-rounded text-base transition-transform duration-300 ${
+                                        canView && canEdit
+                                          ? "group-hover:scale-110"
+                                          : ""
+                                      }`}
+                                    >
+                                      {canView && canEdit ? "edit" : "edit_off"}
+                                    </span>
+                                    <span className="transition-all duration-300">
+                                      {canView && canEdit
+                                        ? "แก้ไข"
+                                        : "ไม่ได้รับสิทธิ์"}
+                                    </span>
+                                  </button>
+
+                                  {/* ลบ */}
+                                  <button
+                                    onClick={() => {
+                                      if (canView && canDelete) {
+                                        setParticipantId(user?.participantId);
+                                      }
+                                    }}
+                                    className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
+                                      canView && canDelete
+                                        ? "text-red-600 bg-gradient-to-b from-red-50 to-red-100/50 hover:from-red-100 hover:to-red-200/70 hover:text-red-700 border border-red-200/60 hover:border-red-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
+                                        : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
+                                    }`}
+                                    disabled={!canView || !canDelete}
+                                  >
+                                    <span
+                                      className={`material-symbols-rounded text-base transition-transform duration-300 ${
+                                        canView && canDelete
+                                          ? "group-hover:scale-110"
+                                          : ""
+                                      }`}
+                                    >
+                                      {canView && canDelete
+                                        ? "delete"
+                                        : "delete_forever"}
+                                    </span>
+                                    <span className="transition-all duration-300">
+                                      {canView && canDelete
+                                        ? "ลบ"
+                                        : "ไม่ได้รับสิทธิ์"}
+                                    </span>
+                                  </button>
+                                </>
+                              )}
                             </div>
                             {/* Date Update */}
                             <div className="flex justify-end gap-2 text-xs text-gray-400">

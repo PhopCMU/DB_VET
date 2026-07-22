@@ -44,12 +44,12 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
         "foods.foodType",
         "email",
         "phone",
-        "selectday.day",
-        "organization",
+        // "selectday.day", // ปิดไม่ได้ใช้
         "packages.category_en",
         "price",
-        "country",
         "address",
+        "organization",
+        "country",
         "subDistrict",
         "district",
         "province",
@@ -63,12 +63,12 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
         "foods.foodType": "อาหารที่เลือก",
         email: "อีเมล",
         phone: "เบอร์ติดต่อ",
-        "selectday.day": "วันที่เข้าร่วม",
-        organization: "หน่วยงานสังกัด",
+        // "selectday.day": "วันที่เข้าร่วม", // ปิดไม่ได้ใช้
         "packages.category_en": "ประเภท",
         price: "ราคา",
+        address: "ที่อยู่จออกใบเสร็จ",
+        organization: "หน่วยงานสังกัด",
         country: "ประเทศ",
-        address: "ที่อยู่",
         subDistrict: "ตำบล",
         district: "อำเภอ",
         province: "จังหวัด",
@@ -490,7 +490,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
 
     const headers = selectedFields.map((key) => headerMap[key] || key);
     const csvRows = renamedData.map((row) =>
-      headers.map((h) => `"${row[h] || ""}"`).join(",")
+      headers.map((h) => `"${row[h] || ""}"`).join(","),
     );
 
     const csvContent = [headers.join(","), ...csvRows].join("\n");
