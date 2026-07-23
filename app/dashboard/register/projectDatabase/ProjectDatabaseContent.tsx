@@ -9,6 +9,7 @@ import CmuvcPage from "./pages/cmuvc/page";
 import VetRunPage from "./pages/vetrun/page";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
+import TsarPage from "./pages/tsar/page";
 import { configTime } from "@/config/config_time";
 import PermissionGuard from "@/components/Guards/PermissionGuard";
 import {
@@ -342,6 +343,8 @@ export default function RegisterProjectDatabasePage() {
         return <AnatomyPage />;
       case "cmuvc":
         return <CmuvcPage />;
+      case "tsar":
+        return <TsarPage />;
       case "vetrun":
         return <VetRunPage />;
       default:

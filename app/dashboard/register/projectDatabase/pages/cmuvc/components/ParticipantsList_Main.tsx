@@ -9,7 +9,6 @@ import { ModalEditParticipant_Main } from "@/components/ModalEdit/CmuvcMainModal
 
 import ThaiYearPicker from "@/components/ThaiYearPicker";
 import ExportMenu from "@/utils/ExportOptions";
-import { useVisitor } from "@/lib/fingerprintjs-shim";
 import dayjs from "dayjs";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -21,7 +20,7 @@ const PROJECT_ID = "ee9ce62b-2e02-4682-9ecf-9f9b564ee5e3";
 
 export default function ParticipantsList_Main() {
   const { userData, loading } = useUser();
-  const { data } = useVisitor({ extendedResult: true });
+
   const [selectedYear, setSelectedYear] = useState<Date | null>(new Date());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [dataParticipants, setDataParticipant] = useState<

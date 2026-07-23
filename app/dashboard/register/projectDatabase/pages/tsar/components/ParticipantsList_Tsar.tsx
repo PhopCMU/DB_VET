@@ -20,7 +20,7 @@ import { toast } from "react-toastify";
 const SUB_MENU_ID = "9b940740-d1e9-4a41-af0d-4e1faa90464d";
 const PROJECT_ID = "ee9ce62b-2e02-4682-9ecf-9f9b564ee5e3";
 
-export default function ParticipantsList_Pre() {
+export default function ParticipantsList_Tsar() {
   const { userData, loading } = useUser();
   const [selectedYear, setSelectedYear] = useState<Date | null>(new Date());
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -205,7 +205,7 @@ export default function ParticipantsList_Pre() {
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-                Names of Participants in the Pre Congress
+                Participants in the TSAR
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

@@ -14,7 +14,7 @@ import PermissionGuard from "@/components/Guards/PermissionGuard";
 import { usePermission } from "@/app/context/UsePermission";
 
 const SUB_MENU_ID = "e432a5bf-eda0-4638-848d-26df9194f57e";
-const PROJECT_ID = "ee9ce62b-2e02-4682-9ecf-9f9b564ee5e3";
+const PROJECT_ID = "7be63544-e1ab-45e6-bd1b-40d910217439";
 
 export default function TsarPage() {
   const [selectedYear, setSelectedYear] = useState<Date | null>(new Date());
@@ -31,7 +31,7 @@ export default function TsarPage() {
   const hasData = useRef(false);
   const router = useRouter();
 
-  const { canView, canCreate, canEdit, canDelete } = usePermission(
+  const { canView, canCreate, canEdit } = usePermission(
     SUB_MENU_ID,
     PROJECT_ID,
   );
