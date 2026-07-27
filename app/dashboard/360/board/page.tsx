@@ -181,60 +181,93 @@ export default function Page() {
   }, [checkedRows, filteredUsers]);
 
   const handleExportExcel = async () => {
-    if (checkedRows.size === 0) return;
+    try {
+      if (!checkedRows || checkedRows.size === 0) return;
 
-    const exportData: { [key: string]: any[] } = {};
+      const exportData: { [key: string]: any[] } = {};
 
-    // เปลี่ยน Set เป็น Array
-    const selectedAccountIds = Array.from(checkedRows).map(
-      (row: any) => row.accountId,
-    );
+      // เปลี่ยน Set เป็น Array (กันค่าว่าง/ไม่มี accountId)
+      const selectedAccountIds = Array.from(checkedRows)
+        .map((row: any) => row?.accountId)
+        .filter((id: any) => id !== undefined && id !== null);
 
-    // กรองข้อมูลผู้ใช้ตามที่เลือก
-    const selectedUserList = filteredUsers.filter((user: any) =>
-      selectedAccountIds.includes(user.accountId),
-    );
+      if (selectedAccountIds.length === 0) return;
 
-    // สร้างข้อมูล Excel
-    selectedUserList.forEach((user: any) => {
-      const sheetName = user.fullname_th || `User ${user.accountId}`;
-      const evaluationData = user.evaluation_B.map(
-        (evalData: any, index: number) => ({
-          No: index + 1,
-          ผู้ประเมิน: evalData.assessor,
-          ID_การประเมิน: evalData.evaluationId,
-          Topic1: evalData.topic1,
-          Topic2: evalData.topic2,
-          Topic3: evalData.topic3,
-          Topic4: evalData.topic4,
-          Topic5: evalData.topic5,
-          Topic6: evalData.topic6,
-          Topic7: evalData.topic7,
-          Topic8: evalData.topic8,
-          Topic9: evalData.topic9,
-          Topic10: evalData.topic10,
-          Topic11: evalData.topic11,
-          Topic12: evalData.topic12,
-          Total:
-            evalData.topic1 +
-            evalData.topic2 +
-            evalData.topic3 +
-            evalData.topic4 +
-            evalData.topic5 +
-            evalData.topic6 +
-            evalData.topic7 +
-            evalData.topic8 +
-            evalData.topic9 +
-            evalData.topic10 +
-            evalData.topic11 +
-            evalData.topic12,
-          comment: evalData.comment,
-        }),
+      // กรองข้อมูลผู้ใช้ตามที่เลือก (กันกรณี filteredUsers ว่าง)
+      const selectedUserList = (filteredUsers || []).filter(
+        (user: any) => user && selectedAccountIds.includes(user.accountId),
       );
-      exportData[sheetName] = evaluationData;
-    });
 
-    exportMultipleSheetsToExcel(exportData, "รายงาน_ตามระเบียบ.xlsx");
+      if (selectedUserList.length === 0) return;
+
+      const toNumber = (val: any) =>
+        typeof val === "number" ? val : Number(val) || 0;
+
+      // สร้างข้อมูล Excel
+      selectedUserList.forEach((user: any) => {
+        if (!user) return;
+
+        const sheetName = user.fullname_th || `User ${user.accountId ?? ""}`;
+        const evaluations = Array.isArray(user.evaluation_B)
+          ? user.evaluation_B
+          : [];
+
+        if (evaluations.length === 0) return;
+
+        const evaluationData = evaluations.map(
+          (evalData: any, index: number) => {
+            const data = evalData || {};
+            const topics = [
+              data.topic1,
+              data.topic2,
+              data.topic3,
+              data.topic4,
+              data.topic5,
+              data.topic6,
+              data.topic7,
+              data.topic8,
+              data.topic9,
+              data.topic10,
+              data.topic11,
+              data.topic12,
+            ];
+
+            return {
+              No: index + 1,
+              ผู้ประเมิน: data.assessor ?? "",
+              ID_การประเมิน: data.evaluationId ?? "",
+              Topic1: data.topic1 ?? "",
+              Topic2: data.topic2 ?? "",
+              Topic3: data.topic3 ?? "",
+              Topic4: data.topic4 ?? "",
+              Topic5: data.topic5 ?? "",
+              Topic6: data.topic6 ?? "",
+              Topic7: data.topic7 ?? "",
+              Topic8: data.topic8 ?? "",
+              Topic9: data.topic9 ?? "",
+              Topic10: data.topic10 ?? "",
+              Topic11: data.topic11 ?? "",
+              Topic12: data.topic12 ?? "",
+              Total: topics.reduce(
+                (sum: number, topic: any) => sum + toNumber(topic),
+                0,
+              ),
+              comment: data.comment ?? "",
+            };
+          },
+        );
+
+        if (evaluationData.length > 0) {
+          exportData[sheetName] = evaluationData;
+        }
+      });
+
+      if (Object.keys(exportData).length === 0) return;
+
+      exportMultipleSheetsToExcel(exportData, "รายงาน_ตามระเบียบ.xlsx");
+    } catch (error) {
+      console.error("handleExportExcel error:", error);
+    }
   };
 
   // Calculate average score from all evaluations

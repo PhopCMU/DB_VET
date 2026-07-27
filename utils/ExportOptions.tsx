@@ -21,6 +21,10 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
   isOpen,
   setIsOpen,
 }) => {
+  // กันค่าว่าง/ไม่ใช่ array
+  const safeExportData: any[] = Array.isArray(exportData) ? exportData : [];
+  const firstItem: any = safeExportData[0] ?? {};
+
   // === Config Header ===
   let tableConfig: ExportConfig = {
     selectedFields: [],
@@ -32,9 +36,9 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
   // === กำหนดค่า tableConfig ตามประเภทข้อมูล ===
   // === Payment CMUVC ===
   if (
-    exportData.length > 0 &&
-    exportData[0].participantId &&
-    !exportData[0].nameBib
+    safeExportData.length > 0 &&
+    firstItem.participantId &&
+    !firstItem.nameBib
   ) {
     tableConfig = {
       selectedFields: [
@@ -81,9 +85,9 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
   }
   // === Payment CMUVC Abstract ===
   else if (
-    exportData.length > 0 &&
-    exportData[0].abstractId &&
-    !exportData[0].nameBib
+    safeExportData.length > 0 &&
+    firstItem.abstractId &&
+    !firstItem.nameBib
   ) {
     tableConfig = {
       selectedFields: [
@@ -131,7 +135,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
     };
   }
   // === Payment Anatomy ===
-  else if (exportData.length > 0 && exportData[0].studentId) {
+  else if (safeExportData.length > 0 && firstItem.studentId) {
     tableConfig = {
       selectedFields: [
         "examSeatNumber",
@@ -163,9 +167,9 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
   }
   // === Payment VETRUN ===
   else if (
-    exportData.length > 0 &&
-    exportData[0].nameBib &&
-    exportData[0].numberBib
+    safeExportData.length > 0 &&
+    firstItem.nameBib &&
+    firstItem.numberBib
   ) {
     tableConfig = {
       selectedFields: [
@@ -217,9 +221,9 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
     };
   } // === Payment VETRUN Sale Shirt ===
   else if (
-    exportData.length > 0 &&
-    exportData[0].total_amount !== undefined &&
-    exportData[0].userId
+    safeExportData.length > 0 &&
+    firstItem.total_amount !== undefined &&
+    firstItem.userId
   ) {
     tableConfig = {
       selectedFields: [
@@ -251,7 +255,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
       sheetName: `SaleShirt_Vetrun_${new Date().toISOString().split("T")[0]}`,
       fileName: `SaleShirt_Vetrun_${new Date().toISOString().split("T")[0]}`,
     };
-  } else if (exportData[0].sponserParticipantId) {
+  } else if (safeExportData.length > 0 && firstItem.sponserParticipantId) {
     tableConfig = {
       selectedFields: [
         "sponserParticipantId",
@@ -390,6 +394,13 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
       fileName = "exported_data",
     } = config;
 
+    if (
+      !Array.isArray(data) ||
+      data.length === 0 ||
+      selectedFields.length === 0
+    )
+      return;
+
     const processedData = flattenAndSelectFields(data, selectedFields);
     const renamedData = mapHeaders(processedData, headerMap);
 
@@ -483,6 +494,13 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
       fileName = "exported_data",
     } = config;
 
+    if (
+      !Array.isArray(data) ||
+      data.length === 0 ||
+      selectedFields.length === 0
+    )
+      return;
+
     const processedData = flattenAndSelectFields(data, selectedFields);
     const renamedData = mapHeaders(processedData, headerMap);
 
@@ -490,7 +508,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
 
     const headers = selectedFields.map((key) => headerMap[key] || key);
     const csvRows = renamedData.map((row) =>
-      headers.map((h) => `"${row[h] || ""}"`).join(","),
+      headers.map((h) => `"${row?.[h] ?? ""}"`).join(","),
     );
 
     const csvContent = [headers.join(","), ...csvRows].join("\n");
@@ -504,20 +522,30 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
 
   // === จัดการ Export ===
   const handleExport = (type: string) => {
-    console.log(`Exporting as ${type}...`);
+    try {
+      if (
+        safeExportData.length === 0 ||
+        tableConfig.selectedFields.length === 0
+      ) {
+        console.warn("No data available to export");
+        return;
+      }
 
-    switch (type) {
-      case "excel":
-        exportToExcel(exportData, tableConfig);
-        break;
-      case "csv":
-        exportToCSV(exportData, tableConfig);
-        break;
-      default:
-        console.warn("Unsupported export format");
+      switch (type) {
+        case "excel":
+          exportToExcel(safeExportData, tableConfig);
+          break;
+        case "csv":
+          exportToCSV(safeExportData, tableConfig);
+          break;
+        default:
+          console.warn("Unsupported export format");
+      }
+    } catch (error) {
+      console.error("handleExport error:", error);
+    } finally {
+      setIsOpen(false);
     }
-
-    setIsOpen(false);
   };
 
   const exportOptions = [
