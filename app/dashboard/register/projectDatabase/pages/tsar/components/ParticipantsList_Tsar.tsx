@@ -45,7 +45,7 @@ export default function ParticipantsList_Tsar() {
     PROJECT_ID,
   );
 
-  const headerTitle = "pre";
+  const headerTitle = "tsar";
 
   const fetchDataParticipantsPre = async (date: Date) => {
     if (!selectedYear) return toast.warn("NOT DATE");

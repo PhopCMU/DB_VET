@@ -28,6 +28,7 @@ export default function ParticipantsList_Pre() {
     CmuvcParticipant[] | null
   >(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedPrice, setSelectedPrice] = useState<string>("all");
   const [isOpenDropdownExport, setIsOpenDropdownExport] =
     useState<boolean>(false);
   const [isUpdated, setIsUpdated] = useState<boolean>(false);
@@ -66,19 +67,37 @@ export default function ParticipantsList_Pre() {
     }
   };
 
+  // สรุปจำนวนผู้เข้าร่วมแยกตามราคา ใช้แสดงในตัวกรองราคาและนับจำนวนคนต่อราคา
+  const priceOptions = useMemo(() => {
+    if (!dataParticipants) return [];
+    const counts = new Map<number, number>();
+    dataParticipants.forEach((p) => {
+      const price = p.price ?? 0;
+      counts.set(price, (counts.get(price) || 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([price, count]) => ({ price, count }));
+  }, [dataParticipants]);
+
   const filtered = useMemo(() => {
     if (!dataParticipants) return [];
     return dataParticipants.filter((p) => {
       const fullName = `${p.fname.trim()} ${p.lname.trim()}`;
       const lowerSearchTerm = searchTerm.toLowerCase();
 
-      return (
+      const matchSearch =
         p.fname.toLowerCase().includes(lowerSearchTerm) ||
         p.lname.toLowerCase().includes(lowerSearchTerm) ||
-        fullName.toLowerCase().includes(lowerSearchTerm)
-      );
+        fullName.toLowerCase().includes(lowerSearchTerm);
+
+      const matchPrice =
+        selectedPrice === "all" || String(p.price ?? 0) === selectedPrice;
+
+      return matchSearch && matchPrice;
     });
-  }, [dataParticipants, searchTerm]);
+  }, [dataParticipants, searchTerm, selectedPrice]);
 
   useEffect(() => {
     if (!hasData.current) {
@@ -318,71 +337,30 @@ export default function ParticipantsList_Pre() {
                   )}
                 </motion.div>
 
-                {/* Export Button */}
+                {/* Price Filter */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.3, ease: "easeOut" }}
-                  className="relative w-full sm:w-auto"
+                  transition={{ duration: 0.3, delay: 0.25, ease: "easeOut" }}
+                  className="relative w-full sm:w-56"
                 >
-                  <motion.button
-                    onClick={() => {
-                      // ต้องมีให้ครบ 3 สิทธิ์ ถึงจะ Export ได้
-                      if (canView && canCreate && canEdit) {
-                        setIsOpenDropdownExport(!isOpenDropdownExport);
-                      }
-                    }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`${
-                      canView && canCreate && canEdit
-                        ? "flex items-center bg-blue-600 text-white rounded-xl hover:bg-blue-700"
-                        : "flex items-center bg-gray-300 text-white rounded-xl hover:bg-gray-400"
-                    } gap-1 px-4 py-2.5  transition-colors shadow-sm w-full sm:w-auto`}
-                    title={
-                      canView && canCreate && canEdit
-                        ? "ส่งออกข้อมูล"
-                        : "ไม่มีสิทธิ์ในการส่งออกข้อมูล"
-                    }
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                    <span className="material-symbols-rounded">
+                      currency_bitcoin
+                    </span>
+                  </div>
+                  <select
+                    value={selectedPrice}
+                    onChange={(e) => setSelectedPrice(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 text-gray-700 hover:border-gray-300 appearance-none cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-lg">
-                      {canView && canCreate && canEdit
-                        ? "download"
-                        : "file_download_off"}
-                    </span>
-                    <span>
-                      {canView && canCreate && canEdit
-                        ? "ส่งออกข้อมูล"
-                        : "ไม่ได้รับสิทธิ์ส่งออกข้อมูล"}
-                    </span>
-                    <span className="material-symbols-rounded text-lg transform transition-transform duration-200">
-                      {isOpenDropdownExport ? "expand_less" : "expand_more"}
-                    </span>
-                  </motion.button>
-
-                  <AnimatePresence>
-                    {isOpenDropdownExport && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute right-0 z-40 mt-2 w-56 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 overflow-hidden"
-                        style={{
-                          boxShadow:
-                            "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-                        }}
-                      >
-                        <div className="py-1.5">
-                          <ExportMenu
-                            exportData={filtered}
-                            isOpen={isOpenDropdownExport}
-                            setIsOpen={setIsOpenDropdownExport}
-                          />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    <option value="all">ราคาทั้งหมด</option>
+                    {priceOptions.map(({ price, count }) => (
+                      <option key={price} value={String(price)}>
+                        {price.toLocaleString("th-TH")} บาท ({count} ท่าน)
+                      </option>
+                    ))}
+                  </select>
                 </motion.div>
               </div>
             </div>
@@ -412,6 +390,73 @@ export default function ParticipantsList_Pre() {
                   </div>
                 </div>
               </div>
+            </motion.div>
+
+            {/* Export Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3, ease: "easeOut" }}
+              className="relative w-full sm:w-auto flex justify-end items-end"
+            >
+              <motion.button
+                onClick={() => {
+                  // ต้องมีให้ครบ 3 สิทธิ์ ถึงจะ Export ได้
+                  if (canView && canCreate && canEdit) {
+                    setIsOpenDropdownExport(!isOpenDropdownExport);
+                  }
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`${
+                  canView && canCreate && canEdit
+                    ? "flex items-center bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+                    : "flex items-center bg-gray-300 text-white rounded-xl hover:bg-gray-400"
+                } gap-1 px-4 py-2.5  transition-colors shadow-sm w-full sm:w-auto`}
+                title={
+                  canView && canCreate && canEdit
+                    ? "ส่งออกข้อมูล"
+                    : "ไม่มีสิทธิ์ในการส่งออกข้อมูล"
+                }
+              >
+                <span className="material-symbols-outlined text-lg">
+                  {canView && canCreate && canEdit
+                    ? "download"
+                    : "file_download_off"}
+                </span>
+                <span>
+                  {canView && canCreate && canEdit
+                    ? "ส่งออกข้อมูล"
+                    : "ไม่ได้รับสิทธิ์ส่งออกข้อมูล"}
+                </span>
+                <span className="material-symbols-rounded text-lg transform transition-transform duration-200">
+                  {isOpenDropdownExport ? "expand_less" : "expand_more"}
+                </span>
+              </motion.button>
+
+              <AnimatePresence>
+                {isOpenDropdownExport && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute right-0 z-40 mb-12 w-56 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 overflow-hidden"
+                    style={{
+                      boxShadow:
+                        "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+                    }}
+                  >
+                    <div className="py-1.5">
+                      <ExportMenu
+                        exportData={filtered}
+                        isOpen={isOpenDropdownExport}
+                        setIsOpen={setIsOpenDropdownExport}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
 
             {/* Loading Stat */}
