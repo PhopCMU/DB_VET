@@ -170,6 +170,7 @@ export const Delete_Participant = async (
   let apiUrl;
   if (title === "main") apiUrl = "/role/api/v1/participant/main/delete";
   if (title === "pre") apiUrl = "/role/api/v1/participant/pre/delete";
+  if (title === "tsar") apiUrl = "/role/api/v1/participant/tsar/delete";
 
   const encryptedData = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
@@ -219,8 +220,6 @@ export const Delete_Participant = async (
 
 export const Delete_Abstract = async (
   abstractId: string,
-  visitorId: string,
-
   setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const apiUrl = "/role/abstract/delete";
@@ -245,7 +244,6 @@ export const Delete_Abstract = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-Visitor-Id": visitorId,
         },
       },
     );
@@ -322,8 +320,6 @@ export const Delete_Sponsor = async (
 
 export const Delete_boot_Sponsor = async (
   sponsorBootId: string,
-  visitorId: string,
-
   setUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const apiUrl = "/role/api/v1/sponsor/boot/delete";
@@ -348,7 +344,6 @@ export const Delete_boot_Sponsor = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-Visitor-Id": visitorId,
         },
       },
     );

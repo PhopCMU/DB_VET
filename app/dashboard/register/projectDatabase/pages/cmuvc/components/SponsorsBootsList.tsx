@@ -33,9 +33,6 @@ export default function SponsorsBootsList() {
     useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
 
-  const { data } = useVisitor({ extendedResult: true });
-  const visitorId = data?.visitorId ?? "";
-  const hasData = useRef(false);
   // กำหนดตัวแปรสำหรับดีบาวน์ เวลา search
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -96,7 +93,7 @@ export default function SponsorsBootsList() {
         fetchSelectorData();
       }, 1000);
     }
-  }, [visitorId, selectedYear]);
+  }, [selectedYear]);
 
   const handerChangeYear = async (date: Date) => {
     setSelectedYear(date);
@@ -108,7 +105,6 @@ export default function SponsorsBootsList() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!visitorId) return toast.warn("ไม่มีข้อมูล ID ประจำ Browser");
     if (!id) return toast.warn("ไม่มีข้อมูล ID");
 
     setIsLoading(true);
@@ -117,11 +113,7 @@ export default function SponsorsBootsList() {
     try {
       // toast.success("ลบข้อมูลเรียบร้อยแล้ว" + id, { autoClose: 2000 });
 
-      const resopnse = await Delete_boot_Sponsor(
-        id,
-        visitorId,
-        setOnUploadProgress,
-      );
+      const resopnse = await Delete_boot_Sponsor(id, setOnUploadProgress);
 
       if (!resopnse.success)
         return toast.error(resopnse.message, { autoClose: 2000 });
