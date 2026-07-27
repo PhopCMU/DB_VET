@@ -1,3 +1,5 @@
+"use client";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -9,8 +11,9 @@ import {
 import ParticipantsList_Tsar from "./components/ParticipantsList_Tsar";
 import { useUser } from "@/app/context/UserContext";
 import Loading from "@/components/Loadings/Loading";
-import { useState } from "react";
+
 import packageVersion from "@/package.json";
+import { useState } from "react";
 
 const menuThemes = {
   tsar: {
