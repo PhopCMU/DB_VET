@@ -16,6 +16,7 @@ import { useVisitor } from "@/lib/fingerprintjs-shim";
 import { InputField } from "./Input/InputField";
 import { useToast } from "@/app/hooks/useToast";
 import ToastNotification from "./Tooltips/ToastNotification";
+import axios from "axios";
 
 interface AnimalDetailModalProps {
   animal: Animal | null;
@@ -78,7 +79,7 @@ export const AnimalDetailModal: React.FC<AnimalDetailModalProps> = ({
       // onRequestClose={onClose}
       ariaHideApp={false}
       contentLabel="Animal Details"
-      className="bg-white/80  p-8 rounded-2xl shadow-xl max-w-2xl mx-auto my-10 outline-none border border-white/20"
+      className="bg-white p-8 rounded-2xl shadow-xl max-w-2xl mx-auto my-10 outline-none border border-white/20"
       overlayClassName="fixed inset-0 flex items-center justify-center z-50"
     >
       <motion.div
@@ -510,20 +511,27 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { toast, showToast, hideToast } = useToast();
 
-  // ✅ ดึง URL ออกมาให้สะอาด
-  const PROXY_URL = "https://corsproxy.io/?";
-  const TARGET_URL = "https://vmapi.vet.cmu.ac.th/vetrun/size/shirt";
-
   // ✅ ดึงข้อมูลไซส์เสื้อเพียงครั้งเดียว
   useEffect(() => {
     const fetchSizeShirt = async () => {
       if (shirts) return; // ✅ ถ้ามีข้อมูลแล้ว ไม่ fetch ซ้ำ
       try {
-        const response = await fetch(
-          PROXY_URL + encodeURIComponent(TARGET_URL),
+        const s = await axios.get(`${config.URL_API}/vetrun/size/shirt`,{
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!s) throw new Error("Unable to fetch shirt sizes");
+
+        const _shirts: Shirt[] = s.data.data.size ?? [];
+        const data: { size?: Shirt[] } = { size: _shirts };
+
+
+        setShirts(
+          (data.size ?? []).filter(
+            (shirt) => shirt.point >= 2 && shirt.point <= 13,
+          ),
         );
-        const data = await response.json();
-        setShirts(data.data);
       } catch (e) {
         showToast("ไม่สามารถดึงข้อมูลไซส์เสื้อได้", "error");
       }
@@ -531,7 +539,6 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
 
     fetchSizeShirt();
   }, [shirts]); // ✅ ดึงแค่ครั้งเดียว
-
   // ✅ ตั้งค่า participant เมื่อเปิด modal
   useEffect(() => {
     if (isOpen && formEmployee) {

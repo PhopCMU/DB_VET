@@ -180,7 +180,6 @@ export const PutEditAnimal_vetrun = async (
 
 export const PutUpdateStatusSaleShirt = async (
   userId: string,
-  visitorId: string,
   setUploadProgress: (progress: number) => void
 ): Promise<ApiResponse> => {
   let apiUrl = "/role/api/v1/vetrun/shirt/payment/update/approved";
@@ -212,7 +211,6 @@ export const PutUpdateStatusSaleShirt = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-visitor-Id": visitorId,
         },
       }
     );
@@ -249,7 +247,6 @@ export const PutUpdateStatusSaleShirt = async (
 export const PutUpdateTracking = async (
   userId: string,
   trackingValue: string,
-  visitorId: string,
   setUploadProgress: (progress: number) => void
 ): Promise<ApiResponse> => {
   let apiUrl = "/role/api/v1/vetrun/tracking/update";
@@ -286,7 +283,6 @@ export const PutUpdateTracking = async (
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-visitor-Id": visitorId,
         },
       }
     );

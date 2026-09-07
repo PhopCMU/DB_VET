@@ -1,3 +1,5 @@
+import type { UserPermission } from "./vetrun/Permission";
+
 // กำหนดโครงสร้างของรายการเมนู
 
 export interface ProjectModel {
@@ -11,3 +13,7 @@ export interface ProjectModel {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ProjectWithPermissions = ProjectModel & {
+  UserPermission: UserPermission[];
+};

@@ -153,7 +153,7 @@ export const Post_UpdateSponsorCryptoJS = async (
 
 export const PostUpdateSlipShirt = async (
   formDataToSend: FormData,
-  visitorId: string,
+
   setUploadProgress: (progress: number) => void
 ): Promise<ApiResponse> => {
   // 1. แยกไฟล์ออกมาก่อน เพื่อไม่ให้ถูกเข้ารหัส
@@ -192,7 +192,7 @@ export const PostUpdateSlipShirt = async (
         headers: {
           Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
           "Content-Type": "multipart/form-data",
-          "X-Visitor-Id": visitorId,
+         
         },
       }
     );

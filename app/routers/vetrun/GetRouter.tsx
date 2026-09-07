@@ -9,7 +9,6 @@ interface ApiResponse {
   data?: any;
 }
 interface TrackingParams {
-  visitorId: string;
   date: Date;
 }
 export const GetParticipant_Vetrun = async (
@@ -77,16 +76,10 @@ export const GetSponsors_Vetrun = async (): Promise<
 };
 
 export const GetTracking_Vetrun = async ({
-  visitorId,
   date,
 }: TrackingParams): Promise<ApiResponse> => {
   // ตรวจสอบ visitorId ก่อน
-  if (!visitorId || typeof visitorId !== "string") {
-    return {
-      success: false,
-      message: "ข้อมูลผู้ใช้ไม่สมบูรณ์",
-    };
-  }
+ 
 
   if (!date) {
     return {
@@ -109,7 +102,7 @@ export const GetTracking_Vetrun = async ({
         headers: {
           Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
           "Content-Type": "application/json",
-          "X-Visitor-Id": visitorId,
+        
         },
         params: {
           encryptedData: encodedEncryptedData,

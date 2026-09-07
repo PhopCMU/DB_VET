@@ -2,7 +2,7 @@ import { config } from "@/config/config_api";
 import axios, { AxiosResponse } from "axios";
 import CryptoJS from "crypto-js";
 import { MenuSidebarResponse } from "@/app/model/menuModel";
-import { ProjectModel } from "../model/projectModel";
+import { ProjectWithPermissions } from "../model/projectModel";
 interface ApiResponse {
   success: boolean;
   message?: string;
@@ -57,10 +57,10 @@ export const menuSidebar = async (): Promise<MenuSidebarResponse> => {
   }
 };
 
-export const getProject = async (): Promise<ProjectModel> => {
+export const getProject = async (): Promise<ProjectWithPermissions[]> => {
   try {
     // ทำการร้องขอ API
-    const res: AxiosResponse<ProjectModel> = await axios.get(
+    const res: AxiosResponse<ProjectWithPermissions[]> = await axios.get(
       `${config.URL_API}/role/project`
     );
     // ตรวจสอบว่ามีข้อมูลการตอบกลับและเป็นอาร์เรย์หรือไม่

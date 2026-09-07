@@ -1,8 +1,11 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useUser } from "@/app/context/UserContext";
 import { getProject } from "@/app/routers/getService";
-import { ProjectModel } from "@/app/model/projectModel";
+import {
+  ProjectModel,
+  ProjectWithPermissions,
+} from "@/app/model/projectModel";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnatomyPage } from "./pages/anatomy/page";
 import CmuvcPage from "./pages/cmuvc/page";
@@ -12,19 +15,35 @@ import dayjs from "dayjs";
 import { configTime } from "@/config/config_time";
 import PermissionGuard from "@/components/Guards/PermissionGuard";
 import TsarPage from "./pages/tsar/page";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  FolderKanban,
+  Layers3,
+  Search,
+  X,
+} from "lucide-react";
 
 const submenuIdFinance = "e432a5bf-eda0-4638-848d-26df9194f57e";
+
+const moduleCardStyles: Record<string, { label: string; accent: string }> = {
+  anatomy: { label: "Anatomy", accent: "bg-rose-500" },
+  cmuvc: { label: "CMUVC", accent: "bg-sky-500" },
+  tsar: { label: "TSAR", accent: "bg-amber-500" },
+  vetrun: { label: "Vet Run", accent: "bg-emerald-500" },
+};
 
 export default function RegisterProjectDatabasePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userData, loading, isSuperAdmin } = useUser();
-  const [projectData, setProjectData] = useState<ProjectModel[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<ProjectModel[]>([]);
+  const [projectData, setProjectData] = useState<ProjectWithPermissions[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<
+    ProjectWithPermissions[]
+  >([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  const hasProjects = useRef(false);
   const projectsPerPage = 8;
 
   const [module, setModule] = useState<string | null>(null);
@@ -43,9 +62,8 @@ export default function RegisterProjectDatabasePage() {
 
   const [database, setDatabase] = useState<string | null>(module);
   const [projectId, setProjectId] = useState<string | null>(project);
-  const [matchedProject, setMatchedProject] = useState<ProjectModel | null>(
-    null,
-  );
+  const [matchedProject, setMatchedProject] =
+    useState<ProjectWithPermissions | null>(null);
 
   // หา project ที่ตรงกับ projectId + database (super admin ไม่ต้องตรวจสอบ permission)
   useEffect(() => {
@@ -54,7 +72,7 @@ export default function RegisterProjectDatabasePage() {
       return;
     }
 
-    const match = projectData.find((p: any) => {
+    const match = projectData.find((p) => {
       if (isSuperAdmin) {
         return p.projectId === projectId && p.database === database;
       }
@@ -62,7 +80,7 @@ export default function RegisterProjectDatabasePage() {
         p.projectId === projectId &&
         p.database === database &&
         p.UserPermission.some(
-          (perm: any) =>
+          (perm) =>
             perm.userId === userData.userId &&
             perm.submenuId === submenuIdFinance &&
             perm.view === true,
@@ -73,31 +91,25 @@ export default function RegisterProjectDatabasePage() {
     setMatchedProject(match || null);
   }, [projectId, database, projectData, userData?.userId, isSuperAdmin]);
 
-  // ตรวจสอบว่า projectId และ database ตรงกับ project ที่มีสิทธิ์ (หรือ super admin)
-  const isValidProject = () => {
-    if (!projectId || !database) return false;
-
-    return projectData.some((p: any) => {
-      if (isSuperAdmin) {
-        return p.projectId === projectId && p.database === database;
-      }
-      return (
-        p.projectId === projectId &&
-        p.database === database &&
-        p.UserPermission.some(
-          (perm: any) =>
-            perm.userId === userData?.userId &&
-            perm.submenuId === submenuIdFinance &&
-            perm.view === true,
-        )
-      );
-    });
-  };
-
   // ตรวจสอบความถูกต้องของ projectId และ database
   useEffect(() => {
     if (projectData.length > 0) {
-      const valid = isValidProject();
+      const valid = projectData.some((p) => {
+        if (isSuperAdmin) {
+          return p.projectId === projectId && p.database === database;
+        }
+        return (
+          p.projectId === projectId &&
+          p.database === database &&
+          p.UserPermission.some(
+            (perm) =>
+              perm.userId === userData?.userId &&
+              perm.submenuId === submenuIdFinance &&
+              perm.view === true,
+          )
+        );
+      });
+
       if (!valid) {
         localStorage.removeItem("module");
         localStorage.removeItem("project");
@@ -110,7 +122,7 @@ export default function RegisterProjectDatabasePage() {
         if (database) localStorage.setItem("module", database);
       }
     }
-  }, [projectId, database, projectData, isSuperAdmin, userData?.userId]);
+  }, [projectId, database, projectData, isSuperAdmin, router, userData?.userId]);
 
   // ดักจับการเปลี่ยนแปลงจาก URL
   useEffect(() => {
@@ -130,15 +142,15 @@ export default function RegisterProjectDatabasePage() {
 
     const fetchProjects = async () => {
       try {
-        const allProjects: any = await getProject();
+        const allProjects = await getProject();
 
-        let filtered;
+        let filtered: ProjectWithPermissions[];
         if (isSuperAdmin) {
           filtered = allProjects;
         } else {
-          filtered = allProjects.filter((project: any) =>
+          filtered = allProjects.filter((project) =>
             project.UserPermission.some(
-              (perm: any) =>
+              (perm) =>
                 perm.userId === userData?.userId &&
                 perm.submenuId === submenuIdFinance &&
                 perm.view === true,
@@ -173,8 +185,9 @@ export default function RegisterProjectDatabasePage() {
   };
 
   // แบ่งหน้า
-  const displayProjects =
-    filteredProjects.length > 0 ? filteredProjects : projectData;
+  const displayProjects = searchQuery.trim()
+    ? filteredProjects
+    : projectData;
   const totalPages = Math.ceil(displayProjects.length / projectsPerPage);
   const indexOfLastProject = currentPage * projectsPerPage;
   const indexOfFirstProject = indexOfLastProject - projectsPerPage;
@@ -321,28 +334,29 @@ export default function RegisterProjectDatabasePage() {
 
   const renderPageHome = () => {
     return (
-      <div className="relative flex min-h-screen flex-col bg-slate-50">
+      <div className="relative flex min-h-screen flex-col bg-[#f3f7f5]">
         <PermissionGuard submenuIdCode={submenuIdFinance} />
         {/* Header */}
-        <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+        <div className="sticky top-0 z-20 border-b border-emerald-950/10 bg-[#f3f7f5]/90 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mx-auto flex w-full items-center justify-between px-6 py-5"
+            className="mx-auto flex w-full max-w-[1600px] items-center justify-between px-5 py-5 sm:px-8"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 ring-1 ring-emerald-100">
-                <span className="material-symbols-outlined text-2xl text-emerald-600">
-                  folder_code
-                </span>
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-700 text-white shadow-sm shadow-emerald-950/20">
+                <FolderKanban aria-hidden="true" size={22} strokeWidth={1.8} />
               </div>
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+              <div className="min-w-0">
+                <h1
+                  id="project-library-heading"
+                  className="truncate text-lg font-bold text-emerald-950 sm:text-xl"
+                >
                   โครงการหรือสัมมนา
                 </h1>
-                <p className="text-xs text-slate-400">
-                  {displayProjects.length} โครงการทั้งหมด
+                <p className="mt-0.5 text-xs font-medium text-emerald-800/65">
+                  คลังข้อมูลโครงการ {displayProjects.length} รายการ
                 </p>
               </div>
             </div>
@@ -351,16 +365,20 @@ export default function RegisterProjectDatabasePage() {
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               aria-expanded={isSearchOpen}
               aria-label={isSearchOpen ? "ปิดค้นหา" : "ค้นหาโครงการ"}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 ${
+              className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 sm:px-4 ${
                 isSearchOpen
-                  ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  : "bg-emerald-600 text-white hover:bg-emerald-700"
+                  ? "bg-white text-emerald-950 ring-1 ring-emerald-950/10 hover:bg-emerald-50"
+                  : "bg-emerald-700 text-white shadow-sm shadow-emerald-950/20 hover:bg-emerald-800"
               }`}
             >
-              <span className="material-symbols-outlined text-base">
-                {isSearchOpen ? "close" : "search"}
+              {isSearchOpen ? (
+                <X aria-hidden="true" size={18} />
+              ) : (
+                <Search aria-hidden="true" size={18} />
+              )}
+              <span className="hidden sm:inline">
+                {isSearchOpen ? "ปิดค้นหา" : "ค้นหาโครงการ"}
               </span>
-              <span>{isSearchOpen ? "ปิดค้นหา" : "ค้นหาโครงการ"}</span>
             </button>
           </motion.div>
 
@@ -374,11 +392,13 @@ export default function RegisterProjectDatabasePage() {
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="mx-auto max-w-7xl px-6 pb-5">
+            <div className="mx-auto max-w-[1600px] px-5 pb-5 sm:px-8">
               <div className="relative">
-                <span className="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  search
-                </span>
+                <Search
+                  aria-hidden="true"
+                  size={19}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-800/55"
+                />
                 <input
                   type="text"
                   value={searchQuery}
@@ -388,7 +408,7 @@ export default function RegisterProjectDatabasePage() {
                   }}
                   placeholder="ค้นหาโครงการ (ชื่อหรือคำอธิบาย)..."
                   aria-label="ค้นหาโครงการ"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full rounded-lg border border-emerald-950/10 bg-white py-3.5 pl-12 pr-11 text-sm text-emerald-950 placeholder:text-emerald-950/45 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20"
                 />
                 {searchQuery && (
                   <button
@@ -397,11 +417,9 @@ export default function RegisterProjectDatabasePage() {
                       handleSearch("");
                     }}
                     aria-label="ล้างคำค้นหา"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-emerald-800/60 transition hover:bg-emerald-50 hover:text-emerald-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
                   >
-                    <span className="material-symbols-outlined text-base">
-                      close
-                    </span>
+                    <X aria-hidden="true" size={17} />
                   </button>
                 )}
               </div>
@@ -410,16 +428,19 @@ export default function RegisterProjectDatabasePage() {
         </div>
 
         {/* Project Grid */}
-        <div className="mx-auto w-full flex-1 px-6 py-8">
+        <section
+          aria-labelledby="project-library-heading"
+          className="mx-auto w-full max-w-[1600px] flex-1 px-5 py-8 sm:px-8 sm:py-10"
+        >
           {currentProjects.length > 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.15 }}
-              className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
             >
               {currentProjects.map((project, index) => (
-                <motion.div
+                <motion.article
                   key={project.projectId}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -427,45 +448,69 @@ export default function RegisterProjectDatabasePage() {
                     duration: 0.3,
                     delay: Math.min(index, 8) * 0.04,
                   }}
-                  whileHover={{ y: -4 }}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleRouter(project)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleRouter(project);
-                    }
-                  }}
-                  className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg hover:shadow-slate-200/60  focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                  whileHover={{ y: -3 }}
+                  className="group relative flex min-h-[250px] flex-col overflow-hidden rounded-lg border border-emerald-950/10 bg-white p-5 text-left shadow-[0_8px_22px_-16px_rgba(6,78,59,0.45)] transition-[border-color,box-shadow] hover:border-emerald-700/30 hover:shadow-[0_18px_36px_-20px_rgba(6,78,59,0.5)] focus-within:border-emerald-700 focus-within:outline-2 focus-within:outline-offset-4 focus-within:outline-emerald-700"
                 >
-                  <div className="flex h-full flex-col p-6">
-                    <div className="mb-4 flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 ring-1 ring-emerald-100 transition-colors group-hover:bg-emerald-100">
-                        <span className="material-symbols-outlined text-xl text-emerald-600">
-                          folder
-                        </span>
-                      </div>
-                      <h2 className="line-clamp-1 text-base font-semibold text-slate-800">
-                        {project.name}
-                      </h2>
-                    </div>
-                    <p className="mb-5 line-clamp-3 flex-grow text-sm leading-relaxed text-slate-500">
-                      {project.description || "ไม่มีคำอธิบาย"}
-                    </p>
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                      <span className="rounded-full bg-slate-50 px-3 py-1 text-xs text-slate-500">
-                        {dayjs(project.createdAt).format(configTime.FULL_TIME)}
-                      </span>
-                      <span className="flex items-center gap-1 text-sm font-medium text-emerald-600 transition-transform group-hover:translate-x-0.5">
-                        ดูรายละเอียด
-                        <span className="material-symbols-outlined text-base">
-                          arrow_forward
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
+                  <button
+                    type="button"
+                    onClick={() => handleRouter(project)}
+                    aria-label={`เปิดดูโครงการ ${project.name}`}
+                    className="absolute inset-0 z-10 cursor-pointer rounded-lg focus:outline-none"
+                  />
+                  {(() => {
+                    const moduleStyle = moduleCardStyles[project.database] ?? {
+                      label: project.database || "General",
+                      accent: "bg-slate-500",
+                    };
+
+                    return (
+                      <>
+                        <div
+                          aria-hidden="true"
+                          className={`absolute inset-x-0 top-0 h-1 ${moduleStyle.accent}`}
+                        />
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-800 transition-colors group-hover:bg-emerald-100">
+                            <Layers3 aria-hidden="true" size={20} strokeWidth={1.8} />
+                          </div>
+                          <span className="max-w-[65%] truncate rounded-md bg-emerald-950/[0.06] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-emerald-950/70">
+                            {moduleStyle.label}
+                          </span>
+                        </div>
+
+                        <div className="mt-5">
+                          <p className="text-xs font-semibold text-emerald-800/60">
+                            โครงการ {String(indexOfFirstProject + index + 1).padStart(2, "0")}
+                          </p>
+                          <h2 className="mt-1.5 line-clamp-2 text-lg font-bold leading-snug text-emerald-950">
+                            {project.name}
+                          </h2>
+                        </div>
+
+                        <p className="mt-3 line-clamp-3 flex-1 text-sm leading-6 text-emerald-950/65">
+                          {project.description || "ไม่มีคำอธิบายสำหรับโครงการนี้"}
+                        </p>
+
+                        <div className="mt-5 flex items-end justify-between gap-3 border-t border-emerald-950/10 pt-4">
+                          <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-emerald-950/60">
+                            <CalendarDays aria-hidden="true" size={15} />
+                            <span className="truncate">
+                              {dayjs(project.createdAt).format(configTime.FULL_TIME)}
+                            </span>
+                          </span>
+                          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-emerald-800">
+                            เปิดดู
+                            <ArrowUpRight
+                              aria-hidden="true"
+                              size={17}
+                              className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                            />
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </motion.article>
               ))}
             </motion.div>
           ) : (
@@ -504,7 +549,7 @@ export default function RegisterProjectDatabasePage() {
               )}
             </motion.div>
           )}
-        </div>
+        </section>
 
         {/* Pagination */}
         {totalPages > 1 && renderPagination()}

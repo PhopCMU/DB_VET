@@ -18,8 +18,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 export default function Sale_Shirt() {
-  const { data } = useVisitor({ extendedResult: true });
-  const visitorId = data?.visitorId ?? "";
+
 
   const [isLoading, setIsLoading] = useState(false);
   const [dataTracking, setDataTracking] = useState<Order[] | null>(null);
@@ -50,7 +49,6 @@ export default function Sale_Shirt() {
     setIsLoading(true);
     try {
       const response: any = await GetTracking_Vetrun({
-        visitorId,
         date: date || new Date(),
       });
       if (response.success) {
@@ -71,14 +69,11 @@ export default function Sale_Shirt() {
   };
 
   useEffect(() => {
-    if (!visitorId) {
-      console.warn("⏳ Waiting for visitorId from FingerprintJS...");
-      return;
-    } else if (!hasShirts.current) {
+if (!hasShirts.current) {
       fetchShirts(selectedYear || new Date());
       hasShirts.current = true;
     }
-  }, [visitorId]);
+  }, [selectedYear]);
 
   const handerChangeYear = async (date: Date) => {
     setSelectedYear(date);
@@ -100,9 +95,19 @@ export default function Sale_Shirt() {
     });
   }, [dataTracking, searchTerm]);
 
-  // ✅ ฟังก์ชันช่วยจัดรูปแบบ
-  const getShirtSizes = (orderItem: any[]) =>
-    orderItem.map((item: any) => item.size.size).join(", ");
+  // ✅ รวมไซส์เสื้อที่ซ้ำกัน เช่น SSS, SSS, SSS เป็น SSS*3
+  const getShirtSizes = (orderItem: any[]) => {
+    const sizeCounts = new Map<string, number>();
+
+    orderItem.forEach((item: any) => {
+      const size = item?.size?.size || "ไม่ระบุ";
+      sizeCounts.set(size, (sizeCounts.get(size) || 0) + 1);
+    });
+
+    return Array.from(sizeCounts.entries())
+      .map(([size, count]) => (count > 1 ? `${size}*${count}` : size))
+      .join(", ");
+  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("th-TH", {
@@ -131,7 +136,7 @@ export default function Sale_Shirt() {
     try {
       const response = await PutUpdateStatusSaleShirt(
         userId,
-        visitorId,
+  
         setOnUploadProgress,
       );
 
@@ -184,7 +189,6 @@ export default function Sale_Shirt() {
       const response = await PutUpdateTracking(
         userId,
         trackingValue,
-        visitorId,
         setOnUploadProgress,
       );
 
@@ -222,11 +226,7 @@ export default function Sale_Shirt() {
     if (!newSlipFile?.arrayBuffer) return toast.error("ไม่พบไฟล์ใบเสร็จ");
     if (!currentUserId) return toast.error("ไม่พบข้อมูลผู้สั่งซื้อ");
 
-    console.log({
-      currentUserId,
-      newSlipFile,
-      visitorId,
-    });
+ 
 
     setIsOpenProgress(true);
     setOnUploadProgress(0);
@@ -238,7 +238,7 @@ export default function Sale_Shirt() {
 
       const response = await PostUpdateSlipShirt(
         formDataToSend,
-        visitorId,
+  
         setOnUploadProgress,
       );
 
@@ -283,7 +283,7 @@ export default function Sale_Shirt() {
     try {
       const response = await DeletedVetrunOrderShirt(
         userId,
-        visitorId,
+      
         setOnUploadProgress,
       );
 
@@ -324,7 +324,7 @@ export default function Sale_Shirt() {
       <motion.span
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200 flex items-center gap-1.5"
+        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700"
       >
         <span className="material-symbols-outlined text-base">
           check_circle
@@ -335,12 +335,32 @@ export default function Sale_Shirt() {
       <motion.span
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="px-3 py-1.5 bg-red-50 text-red-700 rounded-full text-xs font-medium border border-red-200 flex items-center gap-1.5"
+        className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700"
       >
         <span className="material-symbols-outlined text-base">pending</span>
         ยังไม่ชำระ
       </motion.span>
     );
+
+  const summary = useMemo(
+    () => ({
+      total: filtered.length,
+      paid: filtered.filter((order) => order.payment).length,
+      pending: filtered.filter((order) => !order.payment).length,
+      delivery: filtered.filter(
+        (order) => order.sh_collection_method === "delivery",
+      ).length,
+      revenue: filtered.reduce((total, order) => total + order.total_amount, 0),
+    }),
+    [filtered],
+  );
+
+  const closeSlipModal = () => {
+    setIsOpenModal(false);
+    setSelectedSlip(null);
+    setNewSlipFile(null);
+    setPreviewUrl(null);
+  };
 
   return (
     <>
@@ -365,37 +385,158 @@ export default function Sale_Shirt() {
 
       <LoadingModal isOpen={isOpenProgress} progress={onUploadProgress} />
 
-      <div className="p-6 bg-gray-50 min-h-screen mb-10">
+      <div className="min-h-screen  px-4 py-5 text-slate-100 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-8"
+          className="relative mb-6 overflow-hidden rounded-2xl border border-[#283343] bg-[#1d2736] px-5 py-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] sm:px-8 sm:py-8"
         >
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <span className="material-symbols-outlined text-blue-600">
-              inventory
-            </span>
-            ระบบจัดการการสั่งซื้อเสื้อ
-          </h1>
-          <p className="text-gray-500 mt-1">
-            จัดการข้อมูลการสั่งซื้อเสื้อของลูกค้า
-          </p>
+          <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border-[24px] border-sky-400/10" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-32 bg-sky-400" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-sky-300">
+                VETRUN / MERCHANDISE DESK
+              </p>
+              <h1 className="mt-2 flex items-center gap-3 text-2xl font-black tracking-tight text-white sm:text-4xl">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#283343] text-sky-300">
+                  <span className="material-symbols-outlined">inventory</span>
+                </span>
+                ระบบจัดการการสั่งซื้อเสื้อ
+              </h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+                ตรวจสอบคำสั่งซื้อ สถานะการชำระเงิน และเลขพัสดุจากรายการเดียว
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              ข้อมูลปี {selectedYear ? selectedYear.getFullYear() + 543 : "ปัจจุบัน"}
+            </div>
+          </div>
         </motion.div>
 
+        <section
+          aria-label="สรุปคำสั่งซื้อเสื้อ"
+          className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5"
+        >
+          {[
+            { label: "รายการทั้งหมด", value: summary.total, tone: "text-white", icon: "receipt_long" },
+            { label: "ชำระแล้ว", value: summary.paid, tone: "text-emerald-300", icon: "check_circle" },
+            { label: "รอชำระ", value: summary.pending, tone: "text-amber-300", icon: "pending" },
+            { label: "จัดส่ง", value: summary.delivery, tone: "text-sky-300", icon: "local_shipping" },
+            { label: "ยอดรวม", value: formatCurrency(summary.revenue), tone: "text-white", icon: "payments" },
+          ].map((metric) => (
+            <div
+              key={metric.label}
+              className="flex min-h-24 items-center justify-between rounded-xl border border-[#283343] bg-[#1d2736] px-4 py-4 shadow-sm sm:px-5"
+            >
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                  {metric.label}
+                </p>
+                <p className={`mt-1 text-xl font-black tabular-nums sm:text-2xl ${metric.tone}`}>
+                  {metric.value}
+                </p>
+              </div>
+              <span className={`material-symbols-outlined rounded-lg bg-[#283343] p-2 text-lg ${metric.tone}`}>
+                {metric.icon}
+              </span>
+            </div>
+          ))}
+        </section>
+
         {/* Controls Section */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          {/* Left Section - Year Picker and Search */}
-          <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto">
-            {/* Year Picker */}
+        <div className="mb-6 rounded-2xl border border-[#283343] bg-[#1d2736] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.16)] sm:p-5">
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white">คำสั่งซื้อเสื้อ</h2>
+              <p className="text-xs text-slate-400">
+                ค้นหาจากชื่อ อีเมล หรือเบอร์โทรศัพท์
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-sky-300">
+              แสดง {filtered.length} รายการ
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+    
+
+            {/* Search Box */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }}
+              className="relative w-full lg:flex-1"
+            >
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3 text-slate-400">
+                <span className="material-symbols-outlined text-xl">search</span>
+              </div>
+              <input
+                type="search"
+                aria-label="ค้นหาคำสั่งซื้อ"
+                placeholder="ค้นหาชื่อ / อีเมล / เบอร์โทร"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="min-h-11 w-full rounded-lg border border-[#3a4657] bg-[#121a2a] py-3 pl-10 pr-11 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  aria-label="ล้างคำค้นหา"
+                  className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 hover:bg-[#283343] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              )}
+            </motion.div>
+
+            {/* Export Button */}
+            <div className="relative w-full lg:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-expanded={isOpen}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-400 px-5 py-3 text-sm font-black text-[#121a2a] transition hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 lg:w-auto"
+              >
+                <span className="material-symbols-outlined text-lg">download</span>
+                ส่งออกข้อมูล
+                <span className="material-symbols-outlined text-base">
+                  {isOpen ? "expand_less" : "expand_more"}
+                </span>
+              </button>
+
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    className="absolute right-0 z-40 mt-2 w-full min-w-56 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/10 lg:w-56"
+                  >
+                    <ExportMenu
+                      exportData={filtered}
+                      isOpen={isOpen}
+                      setIsOpen={setIsOpen}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+                  {/* Year Picker */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
-              className="relative w-full sm:w-60 mr-3"
+              className="relative w-full lg:w-56 mt-2"
             >
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-3 text-slate-400">
                 <span className="material-symbols-rounded">calendar_today</span>
               </div>
               <ThaiYearPicker
@@ -403,134 +544,34 @@ export default function Sale_Shirt() {
                 onChange={handerChangeYear}
               />
             </motion.div>
-
-            {/* Search Box */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }}
-              className="relative w-full  sm:w-96"
-            >
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 z-10">
-                <span className="material-symbols-outlined text-xl">
-                  search
-                </span>
-              </div>
-              <input
-                type="text"
-                placeholder="ค้นหาชื่อ / อีเมล / เบอร์โทร"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-gray-700 shadow-sm transition-all duration-200"
-              />
-              {searchTerm && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  onClick={() => setSearchTerm("")}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center z-10"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <span className="material-symbols-outlined text-gray-400 hover:text-red-500 transition-colors bg-gray-100 rounded-full p-0.5">
-                    close
-                  </span>
-                </motion.button>
-              )}
-            </motion.div>
-          </div>
-
-          {/* Right Section - Export Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.3, ease: "easeOut" }}
-            className="relative w-full lg:w-auto"
-          >
-            <motion.button
-              onClick={() => setIsOpen(!isOpen)}
-              whileHover={{
-                y: -2,
-                boxShadow: "0 6px 16px rgba(59, 130, 246, 0.2)",
-              }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md w-full lg:w-auto transition-all duration-200"
-            >
-              <span className="material-symbols-outlined text-xl">
-                download
-              </span>
-              <span className="font-medium whitespace-nowrap">
-                ส่งออกข้อมูล
-              </span>
-              <span className="material-symbols-outlined text-lg">
-                {isOpen ? "expand_less" : "expand_more"}
-              </span>
-            </motion.button>
-
-            {/* Export Dropdown */}
-            <AnimatePresence>
-              {isOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                  className="absolute right-0 z-40 mt-2 w-full sm:w-56 origin-top-right bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden  border border-gray-200"
-                >
-                  <div className="py-1 bg-white/95">
-                    <ExportMenu
-                      exportData={filtered}
-                      isOpen={isOpen}
-                      setIsOpen={setIsOpen}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
         </div>
-
-        {/* Debug Panel */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mb-8 p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-700 flex items-center gap-2 mt-8"
-        >
-          <span className="material-symbols-outlined">info</span>
-          <div>
-            <strong>Information:</strong> {visitorId} | จำนวนรายการ:{" "}
-            {filtered.length}
-          </div>
-        </motion.div>
 
         {/* Loading State */}
         {isLoading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100"
+            className="flex flex-col items-center justify-center rounded-2xl border border-[#283343] bg-[#1d2736] py-16 shadow-sm"
           >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="text-blue-600 mb-3"
+              className="mb-3 text-sky-300"
             >
               <span className="material-symbols-outlined text-4xl">
                 progress_activity
               </span>
             </motion.div>
-            <p className="text-blue-600 font-medium">กำลังโหลดข้อมูล...</p>
+            <p className="font-medium text-slate-300">กำลังโหลดข้อมูล...</p>
           </motion.div>
         )}
 
         {/* No Data State (after load) */}
-        {!isLoading && !dataTracking && visitorId === "" && (
+        {!isLoading && !dataTracking && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100"
+            className="flex flex-col items-center justify-center rounded-2xl border border-[#283343] bg-[#1d2736] py-16 shadow-sm"
           >
             <span className="material-symbols-outlined text-red-500 text-4xl mb-3">
               error
@@ -539,16 +580,16 @@ export default function Sale_Shirt() {
           </motion.div>
         )}
 
-        {!isLoading && !dataTracking && visitorId !== "" && (
+        {!isLoading && !dataTracking && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100"
+            className="flex flex-col items-center justify-center rounded-2xl border border-[#283343] bg-[#1d2736] py-16 shadow-sm"
           >
             <span className="material-symbols-outlined text-yellow-500 text-4xl mb-3">
               inventory_2
             </span>
-            <p className="text-yellow-700 font-medium">
+            <p className="font-medium text-amber-300">
               ไม่มีข้อมูลการสั่งซื้อเสื้อสำหรับผู้ใช้นี้
             </p>
           </motion.div>
@@ -559,15 +600,15 @@ export default function Sale_Shirt() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100"
+            className="flex flex-col items-center justify-center rounded-2xl border border-[#283343] bg-[#1d2736] py-16 shadow-sm"
           >
             <span className="material-symbols-outlined text-gray-400 text-4xl mb-3">
               search_off
             </span>
-            <p className="text-gray-500 font-medium">
+            <p className="font-medium text-slate-300">
               ไม่พบข้อมูลตามเงื่อนไขที่ระบุ
             </p>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="mt-1 text-sm text-slate-500">
               ลองเปลี่ยนปีหรือคำค้นหาของคุณ
             </p>
           </motion.div>
@@ -579,71 +620,71 @@ export default function Sale_Shirt() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="overflow-hidden rounded-2xl shadow-lg border border-gray-200 bg-white"
+            className="overflow-hidden rounded-2xl border border-[#283343] bg-white shadow-[0_24px_70px_rgba(0,0,0,0.22)]"
           >
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
+              <table className="w-full divide-y divide-slate-200">
+                <thead className="bg-[#283343]">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           person
                         </span>
                         ข้อมูลผู้สั่งซื้อ
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           local_shipping
                         </span>
                         วิธีรับ
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           checklist
                         </span>
                         จำนวนเสื้อ
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           straighten
                         </span>
                         ขนาดเสื้อ
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           payments
                         </span>
                         ยอดรวม
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           receipt_long
                         </span>
                         เลขพัสดุ
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           paid
                         </span>
                         สถานะชำระ
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-blue-600">
+                        <span className="material-symbols-outlined text-lg text-sky-300">
                           receipt
                         </span>
                         หลักฐานการโอน
@@ -651,14 +692,14 @@ export default function Sale_Shirt() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-200 bg-white">
                   {filtered.map((order, index) => (
                     <motion.tr
                       key={order.userId}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="hover:bg-blue-50/30 transition-colors duration-150 group"
+                      className="group transition-colors duration-150 hover:bg-slate-50"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
@@ -708,7 +749,7 @@ export default function Sale_Shirt() {
                           <span className="material-symbols-outlined text-base text-purple-600">
                             check_box
                           </span>
-                          <span className="font-medium">
+                          <span className="font-medium text-black">
                             {order.OrderItem.length} ตัว
                           </span>
                         </div>
@@ -732,7 +773,7 @@ export default function Sale_Shirt() {
                                 onClick={() => {
                                   handleUpdateEMS(order.userId);
                                 }}
-                                className="px-2 py-2 text-white bg-green-700 hover:bg-green-600 rounded transition-colors shadow-sm w-full flex items-center justify-center gap-1.5"
+                                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-2 py-2 text-white shadow-sm transition-colors hover:bg-emerald-500"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 aria-label="บันทึกเลขพัสดุ"
@@ -762,7 +803,7 @@ export default function Sale_Shirt() {
                                   ? "รอตรวจสอบการชำระเงิน"
                                   : "กรอกเลขพัสดุ"
                               }
-                              className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none transition-all duration-200 focus:border-transparent focus:ring-2 focus:ring-sky-400"
                               disabled={!order.payment}
                               aria-label="เลขพัสดุ"
                             />
@@ -780,7 +821,7 @@ export default function Sale_Shirt() {
                               setPaymentStatus(order.payment);
                               setCurrentUserId(order.userId);
                             }}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl transition-colors font-medium group-hover:bg-blue-200 shadow-sm"
+                            className="inline-flex items-center gap-2 rounded-lg bg-sky-100 px-3 py-2 font-semibold text-sky-800 shadow-sm transition-colors hover:bg-sky-200"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="ดูรูปหลักฐานการโอน"
@@ -792,7 +833,7 @@ export default function Sale_Shirt() {
                           </motion.button>
                           <motion.button
                             onClick={() => setConfirmDelete(order.userId)}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-colors font-medium group-hover:bg-red-200 shadow-sm"
+                            className="inline-flex items-center gap-2 rounded-lg bg-rose-100 px-3 py-2 font-semibold text-rose-800 shadow-sm transition-colors hover:bg-rose-200"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             aria-label="ลบข้อมูล"
@@ -824,11 +865,7 @@ export default function Sale_Shirt() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                      onClick={() => {
-                        setSelectedSlip(null);
-                        setNewSlipFile(null);
-                        setPreviewUrl(null);
-                      }}
+                      onClick={closeSlipModal}
                     ></motion.div>
 
                     <motion.div
@@ -840,9 +877,9 @@ export default function Sale_Shirt() {
                         damping: 25,
                         stiffness: 300,
                       }}
-                      className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col z-10 overflow-hidden"
+                      className="z-10 mx-4 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
                     >
-                      <div className="flex items-center justify-between p-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                      <div className="flex items-center justify-between bg-[#121a2a] p-5 text-white sm:p-6">
                         <h3 className="text-xl font-semibold flex items-center gap-3">
                           <span className="material-symbols-outlined">
                             receipt_long
@@ -850,12 +887,9 @@ export default function Sale_Shirt() {
                           สลิปหลักฐานการชำระเงิน
                         </h3>
                         <motion.button
-                          onClick={() => {
-                            setSelectedSlip(null);
-                            setNewSlipFile(null);
-                            setPreviewUrl(null);
-                          }}
-                          className="p-2 rounded-full hover:bg-blue-700/50 transition-colors"
+                          onClick={closeSlipModal}
+                          aria-label="ปิดหน้าต่างสลิป"
+                          className="rounded-lg p-2 transition-colors hover:bg-[#283343]"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                         >
@@ -866,13 +900,13 @@ export default function Sale_Shirt() {
                       </div>
 
                       {/* Image Preview */}
-                      <div className="flex-1 overflow-auto p-8 bg-gray-50 flex justify-center items-center">
+                      <div className="flex flex-1 items-center justify-center overflow-auto bg-[#f3f6fa] p-6 sm:p-8">
                         {previewUrl ? (
                           <div className="flex justify-center">
                             <img
                               src={previewUrl}
                               alt="Preview"
-                              className="max-w-full max-h-80 w-auto h-auto rounded-xl shadow-md border border-gray-200 object-contain"
+                              className="h-auto max-h-80 max-w-full w-auto rounded-xl border border-slate-200 object-contain shadow-md"
                             />
                           </div>
                         ) : selectedSlip ? (
@@ -880,11 +914,11 @@ export default function Sale_Shirt() {
                             <img
                               src={`${config.URL_API}/uploads/dataVetRun/paymentShirt/${selectedSlip}`}
                               alt="Current Slip"
-                              className="max-w-full max-h-80 w-auto h-auto rounded-xl shadow-md border border-gray-200 object-contain"
+                              className="h-auto max-h-80 max-w-full w-auto rounded-xl border border-slate-200 object-contain shadow-md"
                             />
                           </div>
                         ) : (
-                          <div className="w-full h-64 flex flex-col items-center justify-center bg-gray-100 rounded-xl text-gray-500">
+                          <div className="flex h-64 w-full flex-col items-center justify-center rounded-xl bg-slate-100 text-slate-500">
                             <span className="material-symbols-outlined text-4xl mb-2">
                               receipt
                             </span>
@@ -894,10 +928,10 @@ export default function Sale_Shirt() {
                       </div>
 
                       {/* Upload Section */}
-                      <div className="p-6 border-t border-gray-200 bg-white">
+                      <div className="border-t border-slate-200 bg-white p-5 sm:p-6">
                         <div className="mb-5">
                           <label className=" text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-lg text-blue-600">
+                            <span className="material-symbols-outlined text-lg text-sky-700">
                               upload
                             </span>
                             อัปโหลดสลิปใหม่ (รูปภาพ)
@@ -906,12 +940,12 @@ export default function Sale_Shirt() {
                             <label className="flex-1 cursor-pointer">
                               <motion.div
                                 whileHover={{ scale: 1.02 }}
-                                className="flex flex-col items-center justify-center px-6 py-6 border-2 border-dashed border-blue-400 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
+                                className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-sky-400 bg-sky-50 px-6 py-6 transition-colors hover:bg-sky-100"
                               >
-                                <span className="material-symbols-outlined text-blue-500 text-4xl mb-3">
+                                <span className="material-symbols-outlined mb-3 text-4xl text-sky-600">
                                   cloud_upload
                                 </span>
-                                <p className="text-sm text-blue-700 font-medium">
+                                <p className="text-sm font-medium text-sky-800">
                                   {newSlipFile
                                     ? newSlipFile.name
                                     : "คลิกเพื่อเลือกไฟล์รูปภาพ"}
@@ -946,10 +980,10 @@ export default function Sale_Shirt() {
                               }
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.97 }}
-                              className={`flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-medium shadow-md ${
+                              className={`flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-bold shadow-md ${
                                 !paymentStatus
-                                  ? "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white cursor-pointer"
-                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                  ? "cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500"
+                                  : "cursor-not-allowed bg-slate-200 text-slate-500"
                               }`}
                             >
                               <span className="material-symbols-outlined">
@@ -967,7 +1001,7 @@ export default function Sale_Shirt() {
                                 setNewSlipFile(null);
                                 setPreviewUrl(null);
                               }}
-                              className="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors font-medium flex items-center gap-2"
+                              className="flex items-center gap-2 rounded-lg bg-slate-100 px-5 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
                             >
                               <span className="material-symbols-outlined">
                                 close
@@ -980,10 +1014,10 @@ export default function Sale_Shirt() {
                               whileTap={{ scale: 0.97 }}
                               onClick={handleUploadSlip}
                               disabled={!newSlipFile}
-                              className={`px-5 py-3 rounded-xl font-medium flex items-center gap-2 ${
+                              className={`flex items-center gap-2 rounded-lg px-5 py-3 font-semibold ${
                                 newSlipFile
-                                  ? "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md cursor-pointer"
-                                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  ? "cursor-pointer bg-[#283343] text-white shadow-md hover:bg-[#121a2a]"
+                                  : "cursor-not-allowed bg-slate-200 text-slate-400"
                               }`}
                             >
                               <span className="material-symbols-outlined">
@@ -1001,6 +1035,7 @@ export default function Sale_Shirt() {
             )}
           </motion.div>
         )}
+      </div>
       </div>
     </>
   );

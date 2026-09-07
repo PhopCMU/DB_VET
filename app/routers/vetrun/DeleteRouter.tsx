@@ -123,7 +123,7 @@ export const DeleteVetrunParticipant = async (
 
 export const DeletedVetrunOrderShirt = async (
   userId: string,
-  visitorId: string,
+
   setUploadProgress: (progress: number) => void
 ): Promise<ApiResponse> => {
   const encryptedData = CryptoJS.AES.encrypt(
@@ -142,7 +142,7 @@ export const DeletedVetrunOrderShirt = async (
     const headers = {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
-      "X-Visitor-Id": visitorId,
+      
     };
 
     const response = await axios.delete<ApiResponse>(

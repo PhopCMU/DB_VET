@@ -8,13 +8,249 @@ import {
   AnimalDetailModal,
   EmployeeDetailModal,
 } from "@/components/EmployeeDetail";
-import PieChartComponent from "@/components/PieChart";
 import ThaiYearPicker from "@/components/ThaiYearPicker";
 import ExportMenu from "@/utils/ExportOptions";
-import { useVisitor } from "@/lib/fingerprintjs-shim";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
+type TabId =
+  | "All"
+  | "VIP"
+  | "FUNRUN"
+  | "FANCY"
+  | "MARATHON"
+  | "FUNRUN_WITH_DOG";
+
+const TABS: {
+  id: TabId;
+  label: string;
+  sublabel?: string;
+  icon: string;
+  dot: string;
+}[] = [
+  { id: "All", label: "All", icon: "all_inbox", dot: "bg-slate-400" },
+  { id: "VIP", label: "VIP", icon: "diamond", dot: "bg-violet-400" },
+  {
+    id: "FUNRUN",
+    label: "FUN RUN",
+    sublabel: "ไม่มีสุนัข",
+    icon: "directions_run",
+    dot: "bg-sky-400",
+  },
+  {
+    id: "FUNRUN_WITH_DOG",
+    label: "FUN RUN",
+    sublabel: "มีสุนัข",
+    icon: "pets",
+    dot: "bg-emerald-400",
+  },
+  { id: "FANCY", label: "FANCY", icon: "emoji_events", dot: "bg-pink-400" },
+  { id: "MARATHON", label: "MINI MARATHON", icon: "timer", dot: "bg-amber-400" },
+];
+
+const INK = "border border-[#283343]";
+const HARD_SHADOW = "shadow-[0_16px_36px_rgba(0,0,0,0.2)]";
+
+function MicroLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+      {children}
+    </p>
+  );
+}
+
+interface ParticipantCardProps {
+  employee: any;
+  index: number;
+  onAnimalClick: (animal: Animal) => void;
+  onViewFile: (employee: Employees) => void;
+}
+
+function ParticipantCard({
+  employee,
+  index,
+  onAnimalClick,
+  onViewFile,
+}: ParticipantCardProps) {
+  const isPaid = employee?.payment === true;
+  const animals: any[] = employee?.Animal ?? [];
+  const vipItems: any[] = employee?.Items_vip ?? [];
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.4,
+        delay: Math.min(index * 0.05, 0.5),
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      whileHover={{ y: -4 }}
+      className={`relative flex flex-col overflow-hidden rounded-xl bg-[#1d2736] ${INK} ${HARD_SHADOW}`}
+    >
+      {/* Bib header strip */}
+      <div className="flex items-start justify-between gap-3 bg-[#283343] px-5 pt-4 pb-3">
+        <div>
+          <MicroLabel>Bib No.</MicroLabel>
+          <p className="mt-0.5 text-2xl font-black tabular-nums tracking-tight text-white">
+            {employee.nameBib}
+            {employee.numberBib}
+          </p>
+        </div>
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${INK} ${
+            employee.sex === "M"
+              ? "bg-sky-400/15 text-sky-300"
+              : "bg-pink-400/15 text-pink-300"
+          }`}
+        >
+          <span className="material-symbols-outlined">
+            {employee.sex === "M" ? "male" : "female"}
+          </span>
+        </div>
+      </div>
+
+      {/* Status stamp */}
+      <span
+        className={`absolute right-4 top-[4.5rem] rotate-6 rounded-md border-2 px-2 py-0.5 text-[16px] font-black uppercase tracking-widest ${
+          isPaid
+            ? "border-green-700 bg-green-50 text-green-700"
+            : "border-amber-400 bg-amber-400/10 text-amber-300"
+        }`}
+      >
+        {isPaid ? "ชำระแล้ว" : "รอตรวจสอบ"}
+      </span>
+
+      {/* Runner identity */}
+      <div className="px-5 pb-4 pt-3">
+        <h3 className="text-base font-bold text-white">
+          {employee.firstName} {employee.lastName}
+        </h3>
+        <p className="mt-1 flex items-center gap-1.5 text-[11px] tabular-nums text-slate-400">
+          <span className="material-symbols-outlined text-sm">fingerprint</span>
+          {employee.participantId}
+        </p>
+        <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-slate-400">
+          <span className="material-symbols-outlined text-sm">mail</span>
+          {employee.email}
+        </p>
+      </div>
+
+      {/* Perforation */}
+      <div className="mx-5 border-t border-dashed border-[#3a4657]" />
+
+      {/* Details */}
+      <div className="flex-1 space-y-2 px-5 py-4 text-xs text-slate-300">
+        <div className="group relative flex items-start gap-2">
+          <span className="material-symbols-outlined text-base text-slate-500">
+            home
+          </span>
+          <span className="max-w-[200px] truncate">
+            {employee?.address || "ไม่ระบุที่อยู่"}
+          </span>
+          {employee?.address?.length > 25 && (
+            <div className="invisible absolute bottom-full left-0 z-10 mb-2 w-64 whitespace-normal rounded-lg bg-[#121a2a] px-3 py-1.5 text-[11px] text-slate-100 shadow-lg group-hover:visible">
+              {employee.address}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-base text-slate-500">
+            phone
+          </span>
+          <span className="tabular-nums">
+            {employee?.phone || "ไม่ระบุเบอร์โทร"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-base text-slate-500">
+            checkroom
+          </span>
+          {`ไซส์เสื้อ: ${employee?.size_sh?.size || "ไม่ระบุ"} ${
+            employee?.size_sh?.s_width || ""
+          } ${employee?.size_sh?.s_high || ""}`}
+        </div>
+
+        {employee?.typeBib === "VIP" && employee?.nameBib !== "FANCY-" && (
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-blue-500">
+              directions_run
+            </span>
+            {employee.age ? "MINI MARATHON" : "FUN RUN"}
+          </div>
+        )}
+
+        {employee?.typeBib === "VIP" && employee?.nameBib === "FANCY-" && (
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-base text-purple-500">
+              star
+            </span>
+            VIP
+          </div>
+        )}
+
+        {animals.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {animals.map((animal: any) => (
+              <button
+                type="button"
+                key={animal.animalId}
+                onClick={() => onAnimalClick(animal)}
+                className={`flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-medium text-green-800 ${INK} border-green-700 transition-transform hover:-translate-y-0.5`}
+              >
+                <span className="material-symbols-outlined text-sm">pets</span>
+                {animal.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {vipItems.map((s2: any, i: number) =>
+          s2.items === "trophy" ? (
+            <div key={i} className="flex items-center gap-2 text-slate-400">
+              <span className="material-symbols-outlined text-base">
+                rewarded_ads
+              </span>
+              ถ้วยรางวัล
+            </div>
+          ) : (
+            <div key={i} className="flex items-center gap-2 text-slate-400">
+              <span className="material-symbols-outlined text-base">
+                apparel
+              </span>
+              <span>{s2?.model_shirt === "Shirt4KM" ? "4 KM" : "Shirt VIP"}</span>
+              <span>
+                {`${s2?.size_sh?.size || "ไม่ระบุ"} ${
+                  s2?.size_sh?.s_width || ""
+                } ${s2?.size_sh?.s_high || ""}`}
+              </span>
+            </div>
+          ),
+        )}
+      </div>
+
+      {/* Ticket footer */}
+      <div className="mt-auto flex items-center justify-between border-t border-[#3a4657] bg-[#283343] px-5 py-3">
+        <p className="text-sm font-black tabular-nums text-white">
+          {employee?.typeBib === "VIP" ? "1,500" : "500"}
+          <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            THB
+          </span>
+        </p>
+        <button
+          onClick={() => onViewFile(employee)}
+          className="flex items-center gap-1.5 rounded-lg bg-[#121a2a] px-3 py-1.5 text-[11px] font-bold text-slate-100 transition-colors hover:bg-sky-500 hover:text-[#121a2a]"
+        >
+          <span className="material-symbols-outlined text-sm">visibility</span>
+          ดูเอกสาร
+        </button>
+      </div>
+    </motion.article>
+  );
+}
 
 export default function Page() {
   const router = useRouter();
@@ -34,7 +270,6 @@ export default function Page() {
     ParticipantData[] | null
   >(null);
 
-  const { data } = useVisitor({ extendedResult: true });
   const [activeTab, setActiveTab] = useState<
     "All" | "VIP" | "FUNRUN" | "FANCY" | "MARATHON" | "FUNRUN_WITH_DOG"
   >(() => {
@@ -49,28 +284,26 @@ export default function Page() {
         | "MARATHON") || "All"
     );
   });
-  const visitorId = data?.visitorId ?? "";
+
   // บันทึกค่า activeTab ลง localStorage เมื่อเปลี่ยน
   useEffect(() => {
     localStorage.setItem("activeParticipantTab", activeTab);
   }, [activeTab]);
   // useEffect สำหรับ initial load
   useEffect(() => {
-    if (!visitorId) return;
-
     if (!hasData.current) {
       fetchThemeTitle(new Date());
       hasData.current = true;
     }
-  }, [visitorId]);
+  }, []);
 
   // useEffect สำหรับกรณีที่ isUpdated เปลี่ยน
   useEffect(() => {
-    if (isUpdated && hasData.current && visitorId) {
+    if (isUpdated && hasData.current) {
       fetchThemeTitle(new Date());
       setIsUpdated(false);
     }
-  }, [isUpdated, visitorId]);
+  }, [isUpdated]);
 
   const fetchThemeTitle = async (date: Date): Promise<void> => {
     setIsLoading(true);
@@ -171,889 +404,271 @@ export default function Page() {
     setModalOpenEmployee(true);
   };
 
+  const visibleParticipants = filteredUsers();
+  const paidCount = visibleParticipants.filter(
+    (participant) => participant.payment === true,
+  ).length;
+  const pendingCount = visibleParticipants.length - paidCount;
+
   return (
-    <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-gray-50 min-h-screen">
-      {/* Header with Guidance */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{
-          y: -5,
-          boxShadow:
-            "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-        }}
-        transition={{
-          duration: 0.4,
-          ease: [0.16, 1, 0.3, 1],
-        }}
-        className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl shadow-sm border border-gray-200/80 hover:shadow-lg hover:border-blue-200/70 hover:bg-blue-50/30 group backdrop-blur-sm"
-      >
-        <div className="flex items-start gap-5">
-          <motion.div
-            className="p-3.5 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl text-blue-600 group-hover:from-blue-100 group-hover:to-blue-200 shadow-inner"
-            whileHover={{
-              scale: 1.08,
-              rotate: 2,
-              boxShadow: "0 0 15px rgba(59, 130, 246, 0.3)",
-            }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-          >
-            <span className="material-symbols-rounded text-3xl">
-              assessment
-            </span>
-          </motion.div>
+    <div className="min-h-screen  px-4 py-5 text-slate-100 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1680px]">
+        <motion.header
+          initial={{ opacity: 0, y: -18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="relative overflow-hidden rounded-2xl border border-[#283343] bg-[#1d2736] px-5 py-6 text-slate-50 shadow-[0_20px_60px_rgba(0,0,0,0.24)] sm:px-8 sm:py-8"
+        >
+          <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border-[24px] border-sky-400/10" />
+          <div className="pointer-events-none absolute bottom-0 right-10 h-1 w-32 bg-sky-400" />
+          
+          <div className="relative flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-sky-300">
+                VETRUN / PAYMENT DESK
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-black tracking-tight sm:text-5xl">
+                  ตรวจสอบการชำระเงิน
+                </h1>
+                <span className="rounded-full border border-[#3a4657] bg-[#121a2a] px-3 py-1 text-xs font-bold text-slate-300">
+                  {selectedYear ? selectedYear.getFullYear() + 543 : "ปีปัจจุบัน"}
+                </span>
+              </div>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400 sm:text-base">
+                ตรวจสอบหลักฐานการชำระเงินและข้อมูลผู้สมัครจากรายการเดียว
+                พร้อมกรองตามประเภทการแข่งขันได้ทันที
+              </p>
+            </div>
 
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-              <h1 className="text-2xl font-bold text-gray-800 group-hover:text-blue-700 transition-color flex items-center gap-3">
-                <span>Project Payment Slip Verification</span>
-                <motion.span
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{
-                    delay: 0.3,
-                    type: "spring",
-                    stiffness: 500,
-                  }}
-                  className="text-xs font-semibold px-2.5 py-1 bg-blue-100/70 text-blue-800 rounded-full border border-blue-200/50 whitespace-nowrap"
-                >
-                  {new Date().toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </motion.span>
-              </h1>
-
-              <motion.div
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
                 onClick={() =>
                   router.push(
                     "/dashboard/finance/projectDatabase/pages/vetrun/Sale_Shirt",
                   )
                 }
-                whileHover={{ scale: 1.03 }}
-                className="hidden sm:flex items-center gap-1 text-sm font-medium text-blue-600 bg-blue-50/50 px-3 py-1.5 rounded-full border border-blue-200 cursor-pointer"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#3a4657] px-4 py-2.5 text-sm font-bold text-slate-200 transition hover:border-sky-400 hover:text-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
               >
-                <span className="material-symbols-rounded">arrow_forward</span>
-                ดูข้อมูลสั่งซื้อเสื้อ
-              </motion.div>
-            </div>
-
-            <p className="text-sm text-gray-600 mb-1 leading-relaxed">
-              Manage and verify payment proof submissions for VETRUN 2025.
-            </p>
-
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-xs font-medium px-2 py-1 bg-green-100/50 text-green-800 rounded-full border border-green-200">
-                Active
-              </span>
-              <span className="text-xs font-medium px-2 py-1 bg-purple-100/50 text-purple-800 rounded-full border border-purple-200">
-                Priority
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <motion.div
-          className="sm:hidden mt-4 w-full flex justify-end"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <button className="text-xs font-medium text-blue-600 bg-blue-50/70 px-3 py-1.5 rounded-full border border-blue-200 flex items-center gap-1">
-            View Details
-            <span className="material-symbols-rounded text-sm">
-              arrow_forward
-            </span>
-          </button>
-        </motion.div>
-      </motion.div>
-
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="mt-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shado"
-        >
-          {/* Header Section */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <motion.div
-              initial={{ x: -10 }}
-              animate={{ x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="flex-1"
-            >
-              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                <span className="material-symbols-rounded text-blue-500 bg-blue-50 p-2 rounded-lg text-3xl">
-                  groups
-                </span>
-                <span>
-                  รายชื่อทั้งหมด
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="ml-2 text-xs font-medium px-2 py-1 bg-green-100 text-green-800 rounded-full align-middle"
-                  >
-                    VETRUN{" "}
-                    {selectedYear ? selectedYear.getFullYear() + 543 : ""}
-                  </motion.span>
-                </span>
-              </h2>
-            </motion.div>
-          </div>
-
-          {/* Summary Cards */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 w-full"
-          >
-            <div className="grid grid-cols-1 gap-6 mb-8">
-              {/* Card 1 - สำเร็จ */}
-              <motion.div
-                whileHover={{ y: -5 }}
-                whileTap={{ scale: 0.98 }}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                className="bg-gradient-to-br from-emerald-50/80 to-white p-6 rounded-2xl border border-emerald-100/50 shadow-sm relative overflow-hidden group"
-              >
-                {/* Animated background elements */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-200 rounded-full opacity-10 group-hover:opacity-20"></div>
-                  <div className="absolute -left-5 -bottom-5 w-20 h-20 bg-emerald-300 rounded-full opacity-5 group-hover:opacity-15"></div>
-                </div>
-
-                <div className="flex items-start gap-5 relative">
-                  <div className="p-3 bg-white rounded-xl shadow-md border border-emerald-100 group-hover:shadow-lg ">
-                    <span className="material-symbols-outlined text-emerald-600 text-3xl">
-                      check_circle
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-emerald-700/90 tracking-wider">
-                      สำเร็จ
-                    </h3>
-                    <p className="mt-2 text-4xl font-bold text-emerald-900">
-                      {
-                        filteredUsers().filter((user) => user.payment === true)
-                          .length
-                      }
-                    </p>
-                    <p className="mt-1 text-xs text-emerald-600/80">
-                      การชำระเงินเสร็จสมบูรณ์
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Card 2 - รอตรวจสอบ */}
-              <motion.div
-                whileHover={{ y: -5 }}
-                whileTap={{ scale: 0.98 }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="bg-gradient-to-br from-amber-50/80 to-white p-6 rounded-2xl border border-amber-100/50 shadow-sm relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-amber-200 rounded-full opacity-10 group-hover:opacity-20"></div>
-                  <div className="absolute -left-5 -bottom-5 w-20 h-20 bg-amber-300 rounded-full opacity-5 group-hover:opacity-15"></div>
-                </div>
-
-                <div className="flex items-start gap-5 relative">
-                  <div className="p-3 bg-white rounded-xl shadow-md border border-amber-100 group-hover:shadow-lg ">
-                    <span className="material-symbols-outlined text-amber-600 text-3xl">
-                      pending
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-amber-700/90 tracking-wider">
-                      รอตรวจสอบ
-                    </h3>
-                    <p className="mt-2 text-4xl font-bold text-amber-900">
-                      {
-                        filteredUsers().filter((user) => user.payment === false)
-                          .length
-                      }
-                    </p>
-                    <p className="mt-1 text-xs text-amber-600/80">
-                      รอการยืนยันการชำระเงิน
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Card 3 - กราฟวงกลม */}
-              <motion.div
-                whileHover={{ y: -5 }}
-                whileTap={{ scale: 0.98 }}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="bg-gradient-to-br from-blue-50/80 to-white p-6 rounded-2xl border border-blue-100/50 shadow-sm relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-200 rounded-full opacity-10 group-hover:opacity-20"></div>
-                  <div className="absolute -left-5 -bottom-5 w-20 h-20 bg-blue-300 rounded-full opacity-5 group-hover:opacity-15"></div>
-                </div>
-
-                <div className="relative">
-                  <div className="flex items-center gap-5 mb-4">
-                    <div className="p-3 bg-white rounded-xl shadow-md border border-blue-100 group-hover:shadow-lg ">
-                      <span className="material-symbols-outlined text-blue-600 text-3xl">
-                        donut_large
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-blue-700/90 tracking-wider">
-                        สถานะทั้งหมด
-                      </h3>
-                      <p className="mt-1 text-xs text-blue-600/80">
-                        อัตราส่วนการชำระเงิน
-                      </p>
-                    </div>
-                  </div>
-                  <div className="h-40 flex items-center justify-center">
-                    <PieChartComponent
-                      data={
-                        [
-                          {
-                            name: "สำเร็จ",
-                            value: filteredUsers().filter(
-                              (user) => user.payment === true,
-                            ).length,
-                            color: "#059669", // emerald-600
-                          },
-                          {
-                            name: "รอตรวจสอบ",
-                            value: filteredUsers().filter(
-                              (user) => user.payment === false,
-                            ).length,
-                            color: "#d97706", // amber-600
-                          },
-                        ] as any[]
-                      }
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-            <div className="grid grid-cols-1 gap-6 mb-2">
-              {/* Info Box */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mb-6"
-              >
-                <div className="bg-gradient-to-r from-blue-50 to-blue-50/50 p-5 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
-                  {/* Decorative elements */}
-                  <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-200 rounded-full opacity-10"></div>
-                  <div className="absolute -left-3 -bottom-3 w-16 h-16 bg-blue-300 rounded-full opacity-5"></div>
-
-                  <div className="flex items-start gap-4 relative">
-                    {/* Icon with subtle background */}
-                    <div className="p-2 bg-white rounded-lg shadow-inner border border-blue-100">
-                      <span className="material-symbols-outlined text-blue-600 text-xl">
-                        info
-                      </span>
-                    </div>
-
-                    <div className="flex-1">
-                      <h3 className="text-base font-semibold text-blue-800 mb-2">
-                        คำแนะนำการใช้งาน
-                      </h3>
-
-                      {/* Usage tips with bullet points */}
-                      <ul className="space-y-2 text-sm text-blue-700/90">
-                        <li className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-blue-500 text-sm mt-0.5">
-                            arrow_right
-                          </span>
-                          <span>เลือกกลุ่มที่ต้องการจากเมนูด้านบน</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-blue-500 text-sm mt-0.5">
-                            arrow_right
-                          </span>
-                          <span>ระบบจะแสดงข้อมูลเฉพาะกลุ่มที่เลือก</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-blue-500 text-sm mt-0.5">
-                            arrow_right
-                          </span>
-                          <span>สามารถสลับระหว่างกลุ่มได้ตลอดเวลา</span>
-                        </li>
-                      </ul>
-
-                      {/* Additional help section */}
-                      <div className="mt-4 p-3 bg-blue-100/50 rounded-lg border border-blue-200/50">
-                        <p className="text-xs text-blue-700/80 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">
-                            help
-                          </span>
-                          <span>
-                            ต้องการความช่วยเหลือ? ติดต่อเจ้าหน้าที่ที่หมายเลข
-                            02-XXX-XXXX
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-              {/* Gradient Tabs */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-3 my-4 md:my-6"
-              >
-                {[
-                  {
-                    id: "All",
-                    label: "All",
-                    icon: "all_inbox",
-                    activeGradient: "from-teal-600 to-teal-400",
-                  },
-                  {
-                    id: "VIP",
-                    label: "VIP",
-                    icon: "diamond",
-                    activeGradient: "from-purple-600 to-purple-400",
-                  },
-                  {
-                    id: "FUNRUN",
-                    label: "FUN RUN",
-                    sublabel: "ไม่มีสุนัข",
-                    icon: "directions_run",
-                    activeGradient: "from-blue-600 to-blue-400",
-                  },
-                  {
-                    id: "FUNRUN_WITH_DOG",
-                    label: "FUN RUN",
-                    sublabel: "มีสุนัข",
-                    icon: "pets",
-                    activeGradient: "from-green-600 to-green-400",
-                  },
-                  {
-                    id: "FANCY",
-                    label: "FANCY",
-                    icon: "emoji_events",
-                    activeGradient: "from-pink-600 to-pink-400",
-                  },
-                  {
-                    id: "MARATHON",
-                    label: "MINI MARATHON",
-                    icon: "timer",
-                    activeGradient: "from-orange-600 to-orange-400",
-                  },
-                ].map((tab: any) => (
-                  <motion.button
-                    key={tab.id}
-                    whileHover={{
-                      y: -3,
-                      scale: 1.03,
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                    }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-3 md:px-4 md:py-3 
-        rounded-lg md:rounded-xl
-        flex flex-col items-center justify-center 
-       
-        text-xs md:text-sm font-medium
-        border border-gray-200
-        relative overflow-hidden
-        group
-        ${
-          activeTab === tab.id
-            ? "text-white shadow-md"
-            : "bg-white text-gray-700 hover:bg-gray-50"
-        }
-      `}
-                  >
-                    {/* Active Tab Gradient Background */}
-                    {activeTab === tab.id && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className={`absolute inset-0 bg-gradient-to-br ${tab.activeGradient}`}
-                      />
-                    )}
-
-                    {/* Hover Effect (Inactive Tabs) */}
-                    {activeTab !== tab.id && (
-                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacit" />
-                    )}
-
-                    <span
-                      className={`material-symbols-outlined text-xl md:text-2xl mb-1 relative ${
-                        activeTab === tab.id ? "text-white" : "text-gray-600"
-                      }`}
-                    >
-                      {tab.icon}
-                    </span>
-
-                    <div className="flex flex-col items-center relative">
-                      <span className="font-medium whitespace-nowrap">
-                        {tab.label}
-                      </span>
-                      {tab.sublabel && (
-                        <span className="text-[10px] md:text-xs opacity-80 mt-0.5">
-                          {tab.sublabel}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Active Indicator */}
-                    {activeTab === tab.id && (
-                      <motion.div
-                        layoutId="activeTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-1 bg-white/50"
-                        transition={{
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 30,
-                        }}
-                      />
-                    )}
-                  </motion.button>
-                ))}
-              </motion.div>
-            </div>
-          </motion.div>
-
-          {/* Controls Section */}
-          <div className="flex flex-col lg:flex-row justify-between items-stretch gap-4 mb-6">
-            {/* Left Section - Year Picker and Search */}
-            <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto">
-              {/* Year Picker */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
-                className="relative w-full md:w-48 lg:w-56"
-              >
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
-                  <span className="material-symbols-outlined text-xl">
-                    calendar_today
-                  </span>
-                </div>
-                <ThaiYearPicker
-                  selectedYear={
-                    selectedYear !== null ? selectedYear : new Date()
-                  }
-                  onChange={handerChangeYear}
-                />
-              </motion.div>
-
-              {/* Search Box */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2, ease: "easeOut" }}
-                className="relative w-full md:flex-1 lg:w-64 xl:w-72 ml-10 "
-              >
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
-                  <span className="material-symbols-outlined text-xl">
-                    search
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  placeholder="ค้นหาชื่อหรือรหัส..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 placeholder-gray-400 text-gray-700 hover:border-blue-300"
-                />
-                {searchQuery && (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setSearchQuery("")}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <span className="material-symbols-outlined text-gray-400 hover:text-red-500 transition-colors">
-                      close
-                    </span>
-                  </motion.button>
-                )}
-              </motion.div>
-            </div>
-
-            {/* Right Section - Export Button */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.3, ease: "easeOut" }}
-              className="relative w-full lg:w-auto"
-            >
-              <motion.button
-                onClick={() => setIsOpen(!isOpen)}
-                whileHover={{
-                  y: -2,
-                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.25)",
-                }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md w-full lg:w-auto"
-              >
-                <span className="material-symbols-outlined text-xl">
-                  download
-                </span>
-                <span className="font-medium whitespace-nowrap">
+                <span className="material-symbols-outlined text-lg">apparel</span>
+                ข้อมูลสั่งซื้อเสื้อ
+              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(!isOpen)}
+                  aria-expanded={isOpen}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-400 px-4 py-2.5 text-sm font-black text-[#121a2a] transition hover:bg-sky-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 sm:w-auto"
+                >
+                  <span className="material-symbols-outlined text-lg">download</span>
                   ส่งออกข้อมูล
-                </span>
-              </motion.button>
-
-              {/* Export Dropdown */}
-              <AnimatePresence>
-                {isOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ type: "spring", damping: 25, stiffness: 400 }}
-                    className="absolute right-0 z-40 mt-2 w-full sm:w-56 origin-top-right bg-white rounded-xl shadow-lg ring-1 ring-gray-200/50 overflow-hidden backdrop-blur-sm"
-                  >
-                    <div className="py-1 bg-white/80">
+                  <span className="material-symbols-outlined text-base">
+                    {isOpen ? "expand_less" : "expand_more"}
+                  </span>
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      className="absolute right-0 z-60 mt-2 w-full min-w-56 overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/20 sm:w-56"
+                    >
                       <ExportMenu
-                        exportData={filteredUsers() as any}
+                        exportData={visibleParticipants}
                         isOpen={isOpen}
                         setIsOpen={setIsOpen}
                       />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          </div>
-
-          {/* Loading State */}
-          {isLoading ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-12"
-            >
-              <span className="material-symbols-rounded text-4xl text-blue-500 animate-spin mb-3">
-                progress_activity
-              </span>
-              <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
-            </motion.div>
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-lg">
-              <table className="min-w-full divide-y divide-gray-200/70">
-                <thead
-                  className={`bg-gradient-to-r from-blue-600 to-indigo-600 hidden md:table-header-group`}
-                >
-                  <tr>
-                    {[
-                      {
-                        key: "participantName",
-                        label: "ชื่อผู้ลงทะเบียน",
-                        icon: "badge",
-                      },
-                      {
-                        key: "datas",
-                        label: "ข้อมูลการลงทะเบียน",
-                        icon: "description",
-                      },
-                      {
-                        key: "address",
-                        label: "ข้อมูลติดต่อ",
-                        icon: "contact_page",
-                      },
-                      {
-                        key: "status",
-                        label: "สถานะการชำระเงิน",
-                        icon: "payments",
-                      },
-                      {
-                        key: "viewDetail",
-                        label: "จัดการ",
-                        icon: "settings",
-                      },
-                    ].map((header) => (
-                      <th
-                        key={header.key}
-                        className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-sm">
-                            {header.icon}
-                          </span>
-                          {header.label}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200/50 bg-white">
-                  {filteredUsers().length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-4 py-6 text-center text-sm text-gray-500"
-                      >
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <span className="material-symbols-outlined text-gray-400 text-3xl">
-                            search_off
-                          </span>
-                          <span>ไม่พบข้อมูลผู้ลงทะเบียน</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredUsers().map((employee: any, index: number) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-blue-50/50 transition-color grid grid-cols-2 md:table-row gap-3 p-4 md:p-0"
-                      >
-                        {/* Participant Name */}
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3">
-                          <div className="flex items-center space-x-3">
-                            <div
-                              className={`${
-                                employee.sex === "M"
-                                  ? "bg-blue-100/80 text-blue-600"
-                                  : "bg-pink-100/80 text-pink-600"
-                              } flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center font-medium text-sm`}
-                            >
-                              <span className="material-symbols-outlined">
-                                {employee.sex === "M" ? "male" : "female"}
-                              </span>
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                                <span className="material-symbols-outlined text-base opacity-70">
-                                  person
-                                </span>
-                                {employee.firstName} {employee.lastName}
-                              </div>
-                              <div className="text-xs text-gray-500 flex items-center mt-1.5">
-                                <span className="material-symbols-outlined text-xs mr-1.5 opacity-70">
-                                  fingerprint
-                                </span>
-                                ID: {employee.participantId}
-                              </div>
-                              <div className="text-xs text-gray-500 flex items-center mt-1.5">
-                                <span className="material-symbols-outlined text-xs mr-1.5 opacity-70">
-                                  mail
-                                </span>
-                                {employee.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Data */}
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <div className="space-y-2">
-                            <div className="text-xs text-gray-700 flex items-center">
-                              <span className="material-symbols-outlined text-base mr-2 text-amber-500">
-                                confirmation_number
-                              </span>
-                              {employee.nameBib}
-                              {employee.numberBib}
-                            </div>
-                            {employee?.typeBib === "VIP" &&
-                              employee?.nameBib !== "FANCY-" && (
-                                <div className="text-xs text-gray-700 flex items-center">
-                                  <span className="material-symbols-outlined text-base mr-2 text-blue-500">
-                                    directions_run
-                                  </span>
-                                  {employee.age ? "MINI MARATHON" : "FUN RUN"}
-                                </div>
-                              )}
-
-                            {employee?.typeBib === "VIP" &&
-                              employee?.nameBib === "FANCY-" && (
-                                <div className="text-xs text-gray-700 flex items-center">
-                                  <span className="material-symbols-outlined text-base mr-2 text-purple-500">
-                                    star
-                                  </span>
-                                  VIP
-                                </div>
-                              )}
-
-                            {employee.Animal.length > 0 &&
-                              employee.Animal.map((animal: any) => (
-                                <button
-                                  type="button"
-                                  onClick={() => handleAnimalClick(animal)}
-                                  key={animal.animalId}
-                                  className="text-xs text-gray-700 flex items-center hover:text-amber-600 transition-colors"
-                                >
-                                  <span className="material-symbols-outlined text-base mr-2 text-green-500">
-                                    pets
-                                  </span>
-                                  {animal.name}
-                                </button>
-                              ))}
-
-                            {employee.Items_vip.length > 0 &&
-                              employee.Items_vip?.map(
-                                (s2: any, index: number) =>
-                                  s2.items === "trophy" ? (
-                                    <div
-                                      key={index}
-                                      className="flex gap-2 items-center text-[12px] text-gray-500"
-                                    >
-                                      <span className="material-symbols-outlined ">
-                                        rewarded_ads
-                                      </span>
-                                      ถ้วยรางวัล
-                                    </div>
-                                  ) : (
-                                    <div
-                                      key={index}
-                                      className="flex gap-2 items-center text-[12px] text-gray-500"
-                                    >
-                                      <span className="material-symbols-outlined ">
-                                        apparel
-                                      </span>
-                                      <span>
-                                        {s2?.model_shirt === "Shirt4KM"
-                                          ? "4 KM"
-                                          : "11 KM"}
-                                      </span>
-                                      <span className="material-symbols-outlined text-base  text-gray-500">
-                                        checkroom
-                                      </span>
-                                      {`${s2?.size_sh?.size || "ไม่ระบุ"} ${
-                                        s2?.size_sh?.s_width || ""
-                                      } ${s2?.size_sh?.s_high || ""}`}
-                                    </div>
-                                  ),
-                              )}
-
-                            <AnimalDetailModal
-                              animal={selectedAnimal}
-                              isOpen={modalOpen}
-                              onClose={() => setModalOpen(false)}
-                            />
-                          </div>
-                        </td>
-
-                        {/* Address/Contact */}
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <div className="space-y-2">
-                            <div className="text-xs text-gray-700 flex items-start group relative">
-                              <span className="material-symbols-outlined text-base mr-2 text-gray-500">
-                                home
-                              </span>
-                              <span className="truncate max-w-[160px]">
-                                {employee?.address || "ไม่ระบุที่อยู่"}
-                              </span>
-                              {employee?.address?.length > 25 && (
-                                <div className="absolute left-0 bottom-full mb-2 bg-gray-800 text-white text-xs rounded px-3 py-1.5 whitespace-normal w-64 shadow-lg invisible group-hover:visible z-10">
-                                  {employee.address}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="text-xs text-gray-700 flex items-center">
-                              <span className="material-symbols-outlined text-base mr-2 text-gray-500">
-                                phone
-                              </span>
-                              {employee?.phone || "ไม่ระบุเบอร์โทร"}
-                            </div>
-
-                            <div className="text-xs text-gray-700 flex items-center">
-                              <span className="material-symbols-outlined text-base mr-2 text-gray-500">
-                                checkroom
-                              </span>
-                              {`ไซส์เสื้อ: ${
-                                employee?.size_sh?.size || "ไม่ระบุ"
-                              } ${employee?.size_sh?.s_width || ""} ${
-                                employee?.size_sh?.s_high || ""
-                              }`}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Status */}
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center">
-                              <span
-                                className={`material-symbols-outlined text-base mr-2 ${
-                                  employee?.payment
-                                    ? "text-green-500"
-                                    : "text-yellow-500"
-                                }`}
-                              >
-                                {employee?.payment ? "check_circle" : "pending"}
-                              </span>
-                              <span
-                                className={`text-xs font-medium ${
-                                  employee?.payment
-                                    ? "text-green-600"
-                                    : "text-yellow-600"
-                                }`}
-                              >
-                                {employee?.payment
-                                  ? "ชำระเงินแล้ว"
-                                  : "รอการตรวจสอบ"}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-700 flex items-center">
-                              <span className="material-symbols-outlined text-base mr-2 text-gray-500">
-                                attach_money
-                              </span>
-                              {employee?.typeBib === "VIP" ? "1,500" : "500"}{" "}
-                              บาท
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Action */}
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <div className="flex flex-col space-y-2">
-                            <button
-                              onClick={() => handleViewFile(employee)}
-                              className="text-xs text-blue-600 hover:text-blue-800 flex items-center transition-colors"
-                            >
-                              <span className="material-symbols-outlined text-base mr-1">
-                                visibility
-                              </span>
-                              ดูเอกสาร
-                            </button>
-                            {/* <button className="text-xs text-gray-600 hover:text-gray-800 flex items-center transition-colors">
-                              <span className="material-symbols-outlined text-base mr-1">
-                                edit
-                              </span>
-                              แก้ไข
-                            </button> */}
-                          </div>
-
-                          <EmployeeDetailModal
-                            employee={selectedEmployee}
-                            isOpen={modalOpenEmployee}
-                            onClose={() => setModalOpenEmployee(false)}
-                            onSuccess={() => {
-                              setIsUpdated(true);
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    ))
+                    </motion.div>
                   )}
-                </tbody>
-              </table>
+                </AnimatePresence>
+              </div>
             </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+          </div>
+        </motion.header>
+
+        <main className="mt-8">
+          <section
+            aria-label="สรุปสถานะการชำระเงิน"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+          >
+            <div className="flex items-center justify-between rounded-xl border border-[#283343] bg-[#1d2736] px-5 py-4 shadow-sm">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                  รายการที่แสดง
+                </p>
+                <p className="mt-1 text-3xl font-black tabular-nums text-white">
+                  {visibleParticipants.length}
+                </p>
+              </div>
+              <span className="material-symbols-outlined rounded-lg bg-[#283343] p-2 text-2xl text-slate-200">
+                groups
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-emerald-400/30 bg-[#1d2736] px-5 py-4 shadow-sm">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">
+                  ชำระแล้ว
+                </p>
+                <p className="mt-1 text-3xl font-black tabular-nums text-emerald-300">
+                  {paidCount}
+                </p>
+              </div>
+              <span className="material-symbols-outlined rounded-lg bg-[#283343] p-2 text-2xl text-emerald-300">
+                check_circle
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-amber-400/30 bg-[#1d2736] px-5 py-4 shadow-sm">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-700">
+                  รอตรวจสอบ
+                </p>
+                <p className="mt-1 text-3xl font-black tabular-nums text-amber-700">
+                  {pendingCount}
+                </p>
+              </div>
+              <span className="material-symbols-outlined rounded-lg bg-[#283343] p-2 text-2xl text-amber-300">
+                pending
+              </span>
+            </div>
+          </section>
+
+          <section className="mt-8 rounded-2xl border border-[#283343] bg-[#1d2736] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] sm:p-6">
+            <div className="flex flex-col gap-5 border-b border-[#3a4657] pb-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-400/15 text-sky-300">
+                    <span className="material-symbols-outlined">confirmation_number</span>
+                  </span>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                      รายชื่อผู้สมัคร
+                    </h2>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      เลือกประเภทการแข่งขันหรือค้นหาด้วยชื่อและหมายเลข Bib
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="relative w-full lg:max-w-sm">
+                <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  search
+                </span>
+                <input
+                  type="search"
+                  aria-label="ค้นหาผู้สมัคร"
+                  placeholder="ค้นหาชื่อหรือหมายเลข Bib..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="min-h-11 w-full rounded-lg border border-[#3a4657] bg-[#121a2a] py-2.5 pl-10 pr-10 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="ล้างคำค้นหา"
+                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 hover:bg-[#283343] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+                  >
+                    <span className="material-symbols-outlined text-lg">close</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-pressed={activeTab === tab.id}
+                  className={`group relative flex min-h-16 items-center gap-2 rounded-lg border px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
+                    activeTab === tab.id
+                      ? "border-sky-400 bg-[#121a2a] text-white shadow-[0_6px_18px_rgba(56,189,248,0.18)]"
+                      : "border-[#3a4657] bg-[#283343] text-slate-300 hover:border-sky-400/60 hover:bg-[#121a2a]"
+                  }`}
+                >
+                  <span
+                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${tab.dot}`}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-black uppercase tracking-wide">
+                      {tab.label}
+                    </span>
+                    {tab.sublabel && (
+                      <span className={`mt-0.5 block truncate text-[10px] ${
+                        activeTab === tab.id ? "text-slate-400" : "text-slate-500"
+                      }`}>
+                        {tab.sublabel}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:w-52">
+                <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                  calendar_today
+                </span>
+                <ThaiYearPicker
+                  selectedYear={selectedYear !== null ? selectedYear : new Date()}
+                  onChange={handerChangeYear}
+                />
+              </div>
+              <p className="text-xs font-medium text-slate-400">
+                แสดง {visibleParticipants.length} รายการในกลุ่ม {TABS.find((tab) => tab.id === activeTab)?.label}
+              </p>
+            </div>
+
+            <div className="mt-6">
+              {isLoading ? (
+                <div role="status" className="flex min-h-72 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[#3a4657] bg-[#121a2a]">
+                  <span className="material-symbols-rounded animate-spin text-4xl text-sky-300">
+                    progress_activity
+                  </span>
+                  <p className="text-sm font-medium text-slate-300">กำลังโหลดข้อมูล...</p>
+                </div>
+              ) : visibleParticipants.length === 0 ? (
+                <div className="flex min-h-72 flex-col items-center justify-center rounded-xl border border-dashed border-[#3a4657] bg-[#121a2a] px-6 text-center">
+                  <span className="material-symbols-outlined text-5xl text-slate-600">search_off</span>
+                  <h3 className="mt-3 text-base font-black text-white">ไม่พบข้อมูลผู้สมัคร</h3>
+                  <p className="mt-1 max-w-sm text-sm text-slate-400">
+                    ลองเปลี่ยนประเภทการแข่งขันหรือใช้คำค้นหาอื่น
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
+                  {visibleParticipants.map((employee, index) => (
+                    <ParticipantCard
+                      key={employee.participantId ?? index}
+                      employee={employee}
+                      index={index}
+                      onAnimalClick={handleAnimalClick}
+                      onViewFile={handleViewFile}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </main>
+
+        <AnimalDetailModal
+          animal={selectedAnimal}
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+        />
+        <EmployeeDetailModal
+          employee={selectedEmployee}
+          isOpen={modalOpenEmployee}
+          onClose={() => setModalOpenEmployee(false)}
+          onSuccess={() => setIsUpdated(true)}
+        />
+      </div>
     </div>
   );
 }
