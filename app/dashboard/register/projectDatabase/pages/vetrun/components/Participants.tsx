@@ -64,14 +64,14 @@ export default function VetRunPage() {
     );
   });
 
-  const { data } = useVisitor();
+  
   const { toast, showToast, hideToast } = useToast();
   const { canView, canEdit, canDelete } = usePermission(
     SUB_MENU_ID,
     PRODUCT_ID,
   );
 
-  const visitorId = data ? data?.visitorId : null;
+
 
   // บันทึกค่า activeTab ลง localStorage เมื่อเปลี่ยน
   useEffect(() => {
@@ -204,7 +204,7 @@ export default function VetRunPage() {
     try {
       const response = await DeleteVetrunParticipant(
         payload,
-        visitorId,
+       
         setUploadProgress,
       );
 
@@ -236,7 +236,7 @@ export default function VetRunPage() {
     checkPoint: boolean,
     participantId: string,
   ) => {
-    if (!visitorId) return showToast("ไม่มีข้อมูล ID ประจำ Browser", "warning");
+    
 
     const payload = {
       checkPoint,
@@ -244,7 +244,7 @@ export default function VetRunPage() {
     };
 
     try {
-      const response: any = await Post_UpdateCheckPoint(payload, visitorId);
+      const response: any = await Post_UpdateCheckPoint(payload);
 
       if (!response.success) return showToast(response.data.message, "warning");
       if (response.change) {
@@ -294,7 +294,7 @@ export default function VetRunPage() {
         fromAnimal={selectedAnimal}
         isOpen={isModalOpenEdit}
         title="แก้ไขข้อมูลสัตว์เลี้ยง"
-        visitorId={visitorId}
+      
         onClose={() => setIsModalOpenEdit(false)}
         onUpdate={(updatedAnimal) => {
           if (!updatedAnimal) return;
@@ -310,7 +310,7 @@ export default function VetRunPage() {
         formEmployee={selectedParticipant}
         isOpen={isModalOpenEditParticipant}
         title="แก้ไขข้อมูลนักวิ่ง"
-        visitorId={visitorId}
+      
         onClose={() => setIsModalOpenEditParticipant(false)}
         onUpdate={(updatedParticipant) => {
           if (!updatedParticipant) return;

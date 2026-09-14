@@ -76,7 +76,7 @@ export const putUpdatePayment_vetrun = async (
 
 export const PutEditParticipant_vetrun = async (
   payload: Employees,
-  visitorId: string | null,
+
   setUploadProgress: (progress: number) => void
 ): Promise<ApiResponse> => {
   const encryptedData = CryptoJS.AES.encrypt(
@@ -95,7 +95,7 @@ export const PutEditParticipant_vetrun = async (
     const headers = {
       Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
       "Content-Type": "application/json",
-      "X-Visitor-Id": visitorId,
+  
     };
     const response = await axios.put<ApiResponse>(
       `${config.URL_API}/role/api/v1/vetrun/participant/update?encryptedData=${encryptedDataEncoded}`,
@@ -128,7 +128,7 @@ export const PutEditParticipant_vetrun = async (
 
 export const PutEditAnimal_vetrun = async (
   payload: Paylaods,
-  visitorId: string | null,
+
   setUploadProgress: (progress: number) => void
 ): Promise<ApiResponse> => {
   const encryptedData = CryptoJS.AES.encrypt(
@@ -147,7 +147,6 @@ export const PutEditAnimal_vetrun = async (
     const headers = {
       Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
       "Content-Type": "application/json",
-      "X-Visitor-Id": visitorId,
     };
     const response = await axios.put<ApiResponse>(
       `${config.URL_API}/role/api/v1/vetrun/animal/update?encryptedData=${encryptedDataEncoded}`,

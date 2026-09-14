@@ -227,7 +227,6 @@ export const PostUpdateSlipShirt = async (
 
 export const Post_UpdateCheckPoint = async (
   payload: CheckPoint,
-  visitorId: string | null
 ): Promise<ApiResponse> => {
   try {
     const encryptedData = CryptoJS.AES.encrypt(
@@ -242,7 +241,6 @@ export const Post_UpdateCheckPoint = async (
         headers: {
           Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
           "Content-Type": "multipart/form-data",
-          "X-Visitor-Id": visitorId,
         },
       }
     );

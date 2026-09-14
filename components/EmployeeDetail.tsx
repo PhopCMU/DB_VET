@@ -29,7 +29,6 @@ interface AnimalEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  visitorId: string | null;
   onUpdate: (updatedAnimal: Animal) => void;
 }
 
@@ -46,7 +45,6 @@ interface EmployeeEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  visitorId: string | null;
   onUpdate: (updatedEmployee: Employees) => void;
 }
 
@@ -192,7 +190,7 @@ export const AnimalEditModal: React.FC<AnimalEditModalProps> = ({
   isOpen,
   onClose,
   onUpdate,
-  visitorId,
+
   title,
 }) => {
   const [editedAnimal, setEditedAnimal] = useState<Animal | null>(null);
@@ -242,7 +240,7 @@ export const AnimalEditModal: React.FC<AnimalEditModalProps> = ({
     try {
       const response = await PutEditAnimal_vetrun(
         filteredPayload as any,
-        visitorId,
+     
         setUploadProgress,
       );
 
@@ -500,7 +498,6 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
   isOpen,
   onClose,
   title,
-  visitorId,
   onUpdate,
 }) => {
   const [editedParticipant, setEditedParticipant] = useState<Employees | null>(
@@ -595,7 +592,7 @@ export const EmployeeEditModal: React.FC<EmployeeEditModalProps> = ({
     try {
       const response: any = await PutEditParticipant_vetrun(
         filteredPayload as any,
-        visitorId,
+  
         setUploadProgress,
       );
 

@@ -73,7 +73,7 @@ export const DeleteVetrunSponsorLogo = async (
 
 export const DeleteVetrunParticipant = async (
   payload: Paylaods,
-  visitorId: string | null,
+
   setUploadProgress: (progress: number) => void
 ): Promise<ApiResponse> => {
   const encryptedData = CryptoJS.AES.encrypt(
@@ -92,7 +92,6 @@ export const DeleteVetrunParticipant = async (
     const headers = {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
-      "X-Visitor-Id": visitorId,
     };
 
     const response = await axios.delete<ApiResponse>(
