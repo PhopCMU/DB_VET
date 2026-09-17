@@ -237,7 +237,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
         "payment",
         "ems_tracking",
         "OrderItem.length", // จำนวนเสื้อ
-        "OrderItem.combos", // ขนาดเสื้อ และ รุ่นเสื้อที่เลือก (จะแปลงโดยฟังก์ชัน)
+        "OrderItem.details", // ไซส์ รุ่น และสีเสื้อ
       ],
       headerMap: {
         userId: "ID",
@@ -250,7 +250,7 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
         payment: "สถานะการชำระ",
         ems_tracking: "เลขพัสดุ",
         "OrderItem.length": "จำนวนเสื้อ",
-        "OrderItem.combos": "ขนาดเสื้อ+รุ่น",
+        "OrderItem.details": "รายละเอียดเสื้อ",
       },
       sheetName: `SaleShirt_Vetrun_${new Date().toISOString().split("T")[0]}`,
       fileName: `SaleShirt_Vetrun_${new Date().toISOString().split("T")[0]}`,
@@ -299,20 +299,18 @@ const ExportMenu: React.FC<ExportMenuProps> = ({
           const newKey = parentKey ? `${parentKey}.${key}` : key;
 
           if (Array.isArray(value)) {
-            // กรณีพิเศษ: OrderItem → แปลงเป็น string ของ size
+            // กรณีพิเศษ: OrderItem → แปลงรายละเอียดเสื้อเป็นคอลัมน์
             if (key === "OrderItem" && value.length > 0) {
-              const combos = value
-                .map((item) => {
-                  const size = item.size?.size;
-                  const model = item.shirtmodel?.name;
-                  if (size && model) return `${size} ${model}`;
-                  return null;
-                })
-                .filter(Boolean);
+              const detailCounts = new Map<string, number>();
+              value.forEach((orderItem) => {
+                const detail = `${orderItem.size?.size || "ไม่ระบุไซส์"} - ${orderItem.shirtmodel?.name || "ไม่ระบุรุ่น"} - ${orderItem.shirtcolor?.name || "ไม่ระบุสี"}`;
+                detailCounts.set(detail, (detailCounts.get(detail) || 0) + 1);
+              });
 
-              // กำหนดฟิลด์ใหม่ (เช่น OrderItem.combos)
-              if (selectedFields.includes("OrderItem.combos")) {
-                flattened["OrderItem.combos"] = combos.join(", ");
+              if (selectedFields.includes("OrderItem.details")) {
+                flattened["OrderItem.details"] = Array.from(detailCounts.entries())
+                  .map(([detail, count]) => `${detail}${count > 1 ? ` * ${count}` : ""}`)
+                  .join(", ");
               }
 
               // กรณีเดิมๆ

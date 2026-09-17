@@ -37,13 +37,25 @@ interface Size_shirt {
   updatedAt?: string;
 }
 
-interface OrderItem {
+interface ShirtModel {
+  name: string;
+  name_en?: string;
+}
+
+interface ShirtColor {
+  name: string;
+  name_en?: string;
+}
+
+export interface OrderItem {
   orderId: string;
   shirtmodelId: string;
-  userSaleshirtId: number;
+  userSaleshirtId: string;
   createdAt?: string;
   updatedAt?: string;
   size: Size_shirt;
+  shirtmodel: ShirtModel;
+  shirtcolor: ShirtColor;
 }
 
 export interface Order {

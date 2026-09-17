@@ -1,5 +1,5 @@
 "use client";
-import { Order } from "@/app/model/vetrun/employees";
+import { Order, OrderItem } from "@/app/model/vetrun/employees";
 import { DeletedVetrunOrderShirt } from "@/app/routers/vetrun/DeleteRouter";
 import { GetTracking_Vetrun } from "@/app/routers/vetrun/GetRouter";
 import { PostUpdateSlipShirt } from "@/app/routers/vetrun/PostRouter";
@@ -95,18 +95,19 @@ if (!hasShirts.current) {
     });
   }, [dataTracking, searchTerm]);
 
-  // ✅ รวมไซส์เสื้อที่ซ้ำกัน เช่น SSS, SSS, SSS เป็น SSS*3
-  const getShirtSizes = (orderItem: any[]) => {
-    const sizeCounts = new Map<string, number>();
+  const getShirtDetails = (orderItems: OrderItem[]) => {
+    const shirtCounts = new Map<string, number>();
 
-    orderItem.forEach((item: any) => {
-      const size = item?.size?.size || "ไม่ระบุ";
-      sizeCounts.set(size, (sizeCounts.get(size) || 0) + 1);
+    orderItems.forEach((item) => {
+      const detail = `${item.size?.size || "ไม่ระบุไซส์"} - ${item.shirtmodel?.name || "ไม่ระบุรุ่น"} - ${item.shirtcolor?.name || "ไม่ระบุสี"}`;
+      shirtCounts.set(detail, (shirtCounts.get(detail) || 0) + 1);
     });
 
-    return Array.from(sizeCounts.entries())
-      .map(([size, count]) => (count > 1 ? `${size}*${count}` : size))
-      .join(", ");
+    return Array.from(shirtCounts.entries()).map(([detail, count]) => (
+      <div key={detail} className="rounded-lg bg-slate-50 px-3 py-2 font-semibold text-slate-900">
+        {detail}{count > 1 ? ` * ${count}` : ""}
+      </div>
+    ));
   };
 
   const formatCurrency = (amount: number) =>
@@ -650,12 +651,12 @@ if (!hasShirts.current) {
                         จำนวนเสื้อ
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
+                      <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
                       <div className="flex items-center gap-2">
                         <span className="material-symbols-outlined text-lg text-sky-300">
                           straighten
                         </span>
-                        ขนาดเสื้อ
+                          รายละเอียดเสื้อ
                       </div>
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-200">
@@ -754,9 +755,9 @@ if (!hasShirts.current) {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        <div className="flex flex-col gap-1.5">
-                          {getShirtSizes(order.OrderItem)}
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        <div className="flex min-w-64 flex-col gap-1.5">
+                          {getShirtDetails(order.OrderItem)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
