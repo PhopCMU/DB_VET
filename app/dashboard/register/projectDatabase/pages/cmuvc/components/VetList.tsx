@@ -10,6 +10,8 @@ import Loading from "@/components/Loadings/Loading";
 import { LoadingModal } from "@/components/Modal";
 import ToastNotification from "@/components/Tooltips/ToastNotification";
 import dayjs from "dayjs";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
@@ -252,12 +254,15 @@ export default function VetList() {
     return vets.filter((vet) => {
       if (!vet.fname || !vet.lname) return false; // ป้องกัน null/undefined
 
+      if (!vet.number_ce) return false; // ป้องกัน null/undefined
+
       const fullName = `${vet.fname.trim()} ${vet.lname.trim()}`.toLowerCase();
       const fname = vet.fname.toLowerCase();
       const lname = vet.lname.toLowerCase();
+      const ce = vet.number_ce.toLocaleString();
 
       return (
-        fname.includes(term) || lname.includes(term) || fullName.includes(term)
+        fname.includes(term) || lname.includes(term) || fullName.includes(term) || ce.includes(term)
       );
     });
   }, [vets, searchTerm]); // เพียงพอ: คำนวณใหม่เมื่อ vets หรือ searchTerm เปลี่ยน
@@ -282,6 +287,109 @@ export default function VetList() {
   // Function to hide toast
   const hideToast = () => {
     setToast((prev) => ({ ...prev, isVisible: false }));
+  };
+
+  const handleExportExcel = async () => {
+    if (!canView || filteredVet.length === 0) {
+      showToast("ไม่มีข้อมูลสำหรับส่งออก", "warning");
+      return;
+    }
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const toExcelDate = (value: string | null) => {
+        if (!value) return "";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "" : date;
+      };
+      const worksheet = workbook.addWorksheet("รายชื่อสัตวแพทย์", {
+        properties: { tabColor: { argb: "FF2563EB" } },
+        pageSetup: {
+          paperSize: 9,
+          orientation: "landscape",
+          fitToPage: true,
+          fitToWidth: 1,
+          fitToHeight: 0,
+        },
+      });
+      const columns = [
+        { name: "รหัสบัญชี", width: 22 },
+        { name: "คำนำหน้า", width: 16 },
+        { name: "ชื่อ", width: 20 },
+        { name: "นามสกุล", width: 22 },
+        { name: "ชื่อภาษาอังกฤษ", width: 24 },
+        { name: "นามสกุลภาษาอังกฤษ", width: 26 },
+        { name: "เลขใบอนุญาต", width: 20 },
+        { name: "วันที่สร้างข้อมูล", width: 22 },
+        { name: "วันที่แก้ไขข้อมูล", width: 22 },
+      ];
+      const rows = filteredVet.map((vet) => [
+        String(vet.accountId ?? ""),
+        vet.prefix ?? "",
+        vet.fname ?? "",
+        vet.lname ?? "",
+        vet.fname_EN ?? "",
+        vet.lname_EN ?? "",
+        vet.number_ce?.toString() ?? "",
+        toExcelDate(vet.createAt),
+        toExcelDate(vet.updateAt),
+      ]);
+
+      worksheet.addTable({
+        name: "VetList",
+        ref: "A1",
+        headerRow: true,
+        totalsRow: false,
+        style: {
+          theme: "TableStyleMedium2",
+          showRowStripes: true,
+          showColumnStripes: false,
+        },
+        columns: columns.map(({ name }) => ({ name, filterButton: true })),
+        rows,
+      });
+
+      columns.forEach((column, index) => {
+        worksheet.getColumn(index + 1).width = column.width;
+      });
+      worksheet.views = [{ state: "frozen", ySplit: 1 }];
+      worksheet.getRow(1).height = 30;
+      worksheet.getRow(1).eachCell((cell) => {
+        cell.font = { name: "Tahoma", bold: true, color: { argb: "FFFFFFFF" } };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF1E3A8A" },
+        };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+      });
+
+      worksheet.getColumn(7).alignment = { horizontal: "left" };
+      [8, 9].forEach((columnIndex) => {
+        worksheet.getColumn(columnIndex).numFmt = "dd/mm/yyyy hh:mm";
+        worksheet.getColumn(columnIndex).alignment = { horizontal: "center" };
+      });
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 1) {
+          row.font = { name: "Tahoma" };
+        }
+      });
+      worksheet.pageSetup.printTitlesRow = "1:1";
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const exportDate = new Date().toISOString().slice(0, 10);
+      saveAs(blob, `vet-list_${exportDate}.xlsx`);
+      showToast("ส่งออกไฟล์ Excel สำเร็จ", "success");
+    } catch {
+      showToast("ไม่สามารถส่งออกไฟล์ Excel ได้ กรุณาลองใหม่อีกครั้ง", "error");
+    }
   };
 
   useEffect(() => {
@@ -471,29 +579,45 @@ export default function VetList() {
               </div>
             </div>
 
-            {/* ปุ่มเพิ่มข้อมูล (toggle dropdown) */}
-            <button
-              onClick={() => canCreate && toggleAddPanel()}
-              disabled={!canCreate}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl min-w-[160px] justify-center ${
-                canCreate
-                  ? isAddOpen
-                    ? "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
-                    : "bg-blue-600 text-white shadow-md hover:bg-blue-700"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              } transition-all duration-200`}
-            >
-              <span className="material-symbols-outlined">
-                {isAddOpen ? "expand_less" : "add"}
-              </span>
-              <span className="font-medium">
-                {canCreate
-                  ? isAddOpen
-                    ? "ปิดฟอร์ม"
-                    : "เพิ่มข้อมูล"
-                  : "ไม่มีสิทธิ์เพิ่มข้อมูล"}
-              </span>
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                disabled={!canView || filteredVet.length === 0}
+                className={`flex items-center gap-2 px-5 py-3 rounded-xl min-w-[160px] justify-center transition-all duration-200 ${
+                  canView && filteredVet.length > 0
+                    ? "bg-green-600 text-white shadow-md hover:bg-green-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                <span className="material-symbols-outlined">download</span>
+                <span className="font-medium">ส่งออก Excel</span>
+              </button>
+
+              {/* ปุ่มเพิ่มข้อมูล (toggle dropdown) */}
+              <button
+                onClick={() => canCreate && toggleAddPanel()}
+                disabled={!canCreate}
+                className={`flex items-center gap-2 px-5 py-3 rounded-xl min-w-[160px] justify-center ${
+                  canCreate
+                    ? isAddOpen
+                      ? "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
+                      : "bg-blue-600 text-white shadow-md hover:bg-blue-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                } transition-all duration-200`}
+              >
+                <span className="material-symbols-outlined">
+                  {isAddOpen ? "expand_less" : "add"}
+                </span>
+                <span className="font-medium">
+                  {canCreate
+                    ? isAddOpen
+                      ? "ปิดฟอร์ม"
+                      : "เพิ่มข้อมูล"
+                    : "ไม่มีสิทธิ์เพิ่มข้อมูล"}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Dropdown เพิ่มข้อมูล (ใต้ Header Section) */}

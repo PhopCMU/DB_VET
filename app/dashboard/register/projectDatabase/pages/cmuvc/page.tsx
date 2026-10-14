@@ -259,17 +259,17 @@ export default function CmuvcPage() {
           </MenuItem>
 
           {/* Students */}
-          <MenuItem
+          {/* <MenuItem
             active={activeMenu === "students"}
             onClick={() => setActiveMenu("students")}
             icon={GraduationCap}
             label="Students"
             collapsed={collapsed}
             theme={menuThemes.students}
-          />
+          /> */}
 
           {/* Personnel Dropdown */}
-          <MenuItem
+          {/* <MenuItem
             active={activeMenu === "personnel"}
             icon={BadgeCheck}
             label="Personnel"
@@ -288,7 +288,7 @@ export default function CmuvcPage() {
               isSubItem
               theme={menuThemes.personnel}
             />
-          </MenuItem>
+          </MenuItem> */}
 
           {/* Events */}
           <MenuItem

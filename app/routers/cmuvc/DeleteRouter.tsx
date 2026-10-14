@@ -220,7 +220,7 @@ export const Delete_Participant = async (
 
 export const Delete_Abstract = async (
   abstractId: string,
-  setUploadProgress: (progress: number) => void,
+  onUploadProgress: (progress: number) => void,
 ): Promise<ApiResponse> => {
   const apiUrl = "/role/abstract/delete";
   const encryptedData = CryptoJS.AES.encrypt(
@@ -231,7 +231,7 @@ export const Delete_Abstract = async (
   const encodedEncryptedData = encodeURIComponent(encryptedData);
 
   const { start, stop, waitForCompletion } =
-    createProgressSimulator(setUploadProgress);
+    createProgressSimulator(onUploadProgress);
 
   try {
     start();
@@ -249,14 +249,14 @@ export const Delete_Abstract = async (
     );
 
     await waitForCompletion();
-    setUploadProgress(100);
+    onUploadProgress(100);
 
     return response.data;
   } catch (error: any) {
     // Stop the progress simulation
     stop();
     // Set progress to 0%
-    setUploadProgress(0);
+    onUploadProgress(0);
 
     if (error.response && error.response.data) {
       return error.response.data as ApiResponse;

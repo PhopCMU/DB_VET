@@ -379,7 +379,7 @@ export const GetCheckin = async (
       throw new Error("Missing or invalid date");
     }
     const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
-    const payload = {
+    const payload: { year: number; title?: string } = {
       year: date.getFullYear(),
       title: sanitizeText(title),
     };
@@ -392,6 +392,42 @@ export const GetCheckin = async (
     const encodedEncryptedData = encodeURIComponent(encryptedData);
     const response = await axios.get(
       `${config.URL_API}/role/api/v1/end/event/list`,
+      {
+        headers: getAuthHeaders(),
+        params: {
+          encryptedData: encodedEncryptedData,
+        },
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    return safeErrorResponse(error, "GetCheckin");
+  }
+};
+
+export const GetCheckinNew = async (
+  date: Date,
+  title?: string,
+): Promise<ApiResponse> => {
+  try {
+    if (!isValidDate(date)) {
+      throw new Error("Missing or invalid date");
+    }
+    const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
+    const payload: { year: number; title?: string } = {
+      year: date.getFullYear(),
+      title: sanitizeText(title),
+    };
+
+    const encryptedData = CryptoJS.AES.encrypt(
+      JSON.stringify(payload),
+      secretKey,
+    ).toString();
+
+    const encodedEncryptedData = encodeURIComponent(encryptedData);
+    const response = await axios.get(
+      `${config.URL_API}/role/api/v1/end/event/list/new`,
       {
         headers: getAuthHeaders(),
         params: {

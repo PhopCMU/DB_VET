@@ -121,7 +121,6 @@ export default function AbstractsPage() {
     try {
       const response = await Delete_Abstract(
         abstractId,
-        visitorId,
         setOnUploadProgress,
       );
 

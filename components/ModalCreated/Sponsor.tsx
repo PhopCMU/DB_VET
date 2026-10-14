@@ -93,7 +93,8 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
     fname: "",
     lname: "",
     email: "",
-    organization: "",
+    phone: "",
+    organization: "-",
   });
 
   const [onUploadProgress, setOnUploadProgress] = useState(0);
@@ -102,7 +103,9 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
   useEffect(() => {
     if (isOpen && formDataEdit) {
       setFormData({
-        prefix: formDataEdit.prefix || "DVM",
+        prefix: ["Miss", "Mr", "Mrs"].includes(formDataEdit.prefix)
+          ? formDataEdit.prefix
+          : "",
         companyId: formDataEdit.companyId || "",
         foodId: formDataEdit.foodId || "",
         ce: formDataEdit.ce || "",
@@ -110,7 +113,7 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
         lname: formDataEdit.lname || "",
         email: formDataEdit.email || "",
         phone: formDataEdit.phone || "",
-        organization: formDataEdit.organization || "",
+        organization: formDataEdit.organization || "-",
       });
     }
   }, [isOpen, formDataEdit]);
@@ -119,10 +122,11 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    // อนุญาตเฉพาะ A-Z, a-z และช่องว่าง (สำหรับชื่อ-นามสกุล)
     let filteredValue = value;
     if (name === "fname" || name === "lname") {
-      filteredValue = value.replace(/[^A-Za-z]/g, "");
+      filteredValue = value.replace(/[^A-Za-z0-9 ]/g, "");
+    } else if (name === "phone") {
+      filteredValue = value.replace(/\D/g, "").slice(0, 10);
     }
     setFormData((prev: any) => ({
       ...prev,
@@ -133,10 +137,16 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
   const handleSubmit = async () => {
     if (!headerTitle) return toast.warn("ไม่มีข้อมูล header title");
     if (!formData.ce) return toast.warn("กรุณากรอกข้อมูล CE");
+    if (!["Miss", "Mr", "Mrs"].includes(formData.prefix)) {
+      return toast.warn("กรุณาเลือกคำนำหน้า");
+    }
     if (!formData.fname) return toast.warn("กรุณากรอกข้อมูลชื่อ");
     if (!formData.lname) return toast.warn("กรุณากรอกข้อมูลนามสกุล");
     if (!formData.email) return toast.warn("กรุณากรอกข้อมูลอีเมล");
     if (!formData.phone) return toast.warn("กรุณากรอกข้อมูลเบอร์โทร");
+    if (!/^\d{10}$/.test(formData.phone)) {
+      return toast.warn("กรุณากรอกเบอร์โทรเป็นตัวเลข 10 หลัก");
+    }
     if (headerTitle !== "sponsor") {
       if (!formData.organization) return toast.warn("กรุณากรอกข้อมูลหน่วยงาน");
     }
@@ -217,7 +227,8 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
         fname: "",
         lname: "",
         email: "",
-        organization: "",
+        phone: "",
+        organization: "-",
       });
     } catch (error: any) {
       toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
@@ -235,7 +246,8 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
       fname: "",
       lname: "",
       email: "",
-      organization: "",
+      phone: "",
+      organization: "-",
     });
     onClose();
   };
@@ -314,19 +326,32 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
               required
               placeholder="กรุณากรอกเลขใบอนุญาต"
             />
-            <InputField
-              label="คำนำหน้า"
-              name="prefix"
-              value={formData.prefix || "DVM"}
-              onChange={handleInputChange}
-              icon={
-                <span className="material-symbols-outlined text-gray-400">
+            <div className="relative">
+              <label
+                htmlFor="sponsor-prefix"
+                className="block text-sm font-medium text-gray-700 mb-2 ml-1"
+              >
+                คำนำหน้า<span className="text-red-500 ml-1">*</span>
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                   badge
                 </span>
-              }
-              required
-              placeholder="กรุณากรอกคำนำหน้า"
-            />
+                <select
+                  id="sponsor-prefix"
+                  name="prefix"
+                  value={formData.prefix}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white"
+                >
+                  <option value="">เลือกคำนำหน้า</option>
+                  <option value="Miss">Miss</option>
+                  <option value="Mr">Mr</option>
+                  <option value="Mrs">Mrs</option>
+                </select>
+              </div>
+            </div>
 
             <InputField
               label="ชื่อ"
@@ -339,8 +364,8 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
                 </span>
               }
               required
-              pattern="[A-Za-z\s]+"
-              title="กรุณากรอกเป็นภาษาอังกฤษเท่านั้น"
+              pattern="[A-Za-z0-9 ]+"
+              title="กรุณากรอกภาษาอังกฤษ ตัวเลข หรือเว้นวรรค"
               placeholder="กรุณากรอกชื่อ"
             />
 
@@ -355,8 +380,8 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
                 </span>
               }
               required
-              pattern="[A-Za-z\s]+"
-              title="กรุณากรอกเป็นภาษาอังกฤษเท่านั้น"
+              pattern="[A-Za-z0-9 ]+"
+              title="กรุณากรอกภาษาอังกฤษ ตัวเลข หรือเว้นวรรค"
               placeholder="กรุณากรอกนามสกุล"
             />
 
@@ -371,6 +396,11 @@ export const ModalCreateSponsor: FC<SponsorsProps> = ({
                 </span>
               }
               required
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]{10}"
+              maxLength={10}
+              title="กรุณากรอกเบอร์โทรเป็นตัวเลข 10 หลัก"
               placeholder="กรุณากรอกเบอร์โทร"
             />
 
