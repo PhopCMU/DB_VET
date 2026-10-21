@@ -146,21 +146,6 @@ export default function SponsorsList() {
     }
   };
 
-  const button_add = () => {
-    return (
-      <button
-        onClick={() => {
-          setFormDataEdit(null);
-          setIsOpenCreateSponsor(true);
-          setTitle("เพิ่มข้อมูล");
-        }}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        + เพิ่ม
-      </button>
-    );
-  };
-
   return (
     <>
       <PermissionGuard submenuIdCode={SUB_MENU_ID} />
@@ -184,93 +169,63 @@ export default function SponsorsList() {
 
       <LoadingModal isOpen={isLoading} progress={onUploadProgress} />
 
-      <div className="min-h-screen">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ y: -2 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl  hover:border-blue-100 hover:bg-gradient-to-br hover:from-blue-50/30 hover:to-white group backdrop-blur-sm"
-        >
-          <div className="flex items-start gap-4">
-            {/* Icon Section */}
-            <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl text-blue-600 group-hover:from-blue-100 group-hover:to-blue-200  shadow-sm">
-              <span className="material-symbols-rounded text-3xl">
-                assessment
-              </span>
-            </div>
-
-            {/* Content Section */}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-                Sponsors Participating in the{" "}
-                <span className="text-blue-600 underline">
-                  {selectedTitleTheme === "main"
-                    ? "Main Conference"
-                    : selectedTitleTheme === "pre"
-                      ? "Pre Congress"
-                      : selectedTitleTheme === "tsar"
-                        ? "TSAR"
-                        : ""}
+      <div>
+        <div className="rounded-2xl border border-[#e4e9e4] bg-white p-5 shadow-[0_8px_30px_-24px_rgba(30,54,46,0.45)] sm:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#176b56] text-white shadow-sm">
+                <span className="material-symbols-rounded text-2xl">
+                  handshake
                 </span>
-                <motion.span
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-xs font-semibold px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-sm"
-                >
-                  {selectedYear ? selectedYear.getFullYear() + 543 : ""}
-                </motion.span>
-              </h1>
-              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                Review of the Participant List for the Event
-              </p>
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight text-[#243a32] md:text-2xl">
+                  รายชื่อผู้สนับสนุน
+                </h1>
+                <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-[#718078]">
+                  ตรวจสอบและจัดการรายชื่อผู้เข้าร่วมจากผู้สนับสนุน
+                  <span className="rounded-full bg-[#f4efe5] px-2.5 py-0.5 text-xs font-semibold text-[#8a6a33]">
+                    พ.ศ. {selectedYear ? selectedYear.getFullYear() + 543 : "-"}
+                  </span>
+                </p>
+              </div>
             </div>
 
-            {/* Button Group - ปรับให้เล็กลงและทันสมัย */}
-            <div className="flex flex-row gap-2 bg-gray-50/80 rounded-xl p-1.5 backdrop-blur-sm">
+            {/* ตัวเลือกประเภทงาน */}
+            <div
+              role="tablist"
+              aria-label="ประเภทงาน"
+              className="grid grid-cols-3 gap-1.5 rounded-xl bg-[#eef3ef] p-1.5"
+            >
               {[
-                {
-                  name: "Main Conference",
-                  title: "main",
-                },
-                {
-                  name: "Pre-Congress",
-                  title: "pre",
-                },
-                {
-                  name: "TSAR",
-                  title: "tsar",
-                },
-              ].map((type, index) => (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    fetchData(new Date(), type.title);
-                    setSelectedTitleTheme(type.title as SponsorType);
-                  }}
-                  key={index}
-                  className={`relative px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                    selectedTitleTheme === type.title
-                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-200"
-                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  {type.name}
-                  {/* Active indicator */}
-                  {selectedTitleTheme === type.title && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 -z-10"
-                      transition={{ type: "spring", duration: 0.5 }}
-                    />
-                  )}
-                </motion.button>
-              ))}
+                { name: "Main Conference", title: "main" },
+                { name: "Pre-Congress", title: "pre" },
+                { name: "TSAR", title: "tsar" },
+              ].map((type) => {
+                const active = selectedTitleTheme === type.title;
+                return (
+                  <button
+                    key={type.title}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => {
+                      fetchData(new Date(), type.title);
+                      setSelectedTitleTheme(type.title as SponsorType);
+                    }}
+                    className={`h-10 whitespace-nowrap rounded-lg px-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 ${
+                      active
+                        ? "bg-white text-[#125844] shadow-sm ring-1 ring-[#d8e0da]"
+                        : "text-[#617168] hover:text-[#243a32]"
+                    }`}
+                  >
+                    {type.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <AnimatePresence>
           <motion.div
@@ -278,47 +233,27 @@ export default function SponsorsList() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="mt-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300 flex flex-col gap-1"
+            className="mt-5 flex flex-col gap-1 rounded-2xl border border-[#e4e9e4] bg-white p-5 shadow-[0_8px_30px_-24px_rgba(30,54,46,0.45)] sm:p-6"
           >
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex-1">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-inner">
-                      <span className="material-symbols-rounded text-blue-600 text-3xl">
-                        groups
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-2xl font-bold text-gray-800">
-                        รายชื่อทั้งหมด
-                      </h2>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <p className="text-[12px]">
-                        จำนวนผู้ที่ได้รับสนับสนุนทั้งหมด{" "}
-                        <span className="font-semibold text-blue-600 ml-1 px-2 py-1 bg-blue-50 rounded-lg">
-                          {filtered.length} ท่าน
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Toolbar */}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <p className="text-sm text-[#718078]">
+                พบ{" "}
+                <span className="font-semibold text-[#176b56]">
+                  {filtered.length.toLocaleString("th-TH")}
+                </span>{" "}
+                รายชื่อ
+                {searchTerm ? " ตามเงื่อนไขค้นหา" : ""}
+              </p>
 
               {/* Controls Section */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                 {/* Year Picker */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
-                  className="relative w-full sm:w-60 mr-3"
+                  className="relative w-full sm:w-56"
                 >
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                     <span className="material-symbols-rounded">
@@ -346,11 +281,12 @@ export default function SponsorsList() {
                     </span>
                   </div>
                   <input
-                    type="text"
+                    type="search"
                     placeholder="ค้นหาชื่อ นามสกุล หรือ บริษัท..."
+                    aria-label="ค้นหารายชื่อผู้สนับสนุน"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all duration-200 placeholder-gray-400 text-gray-700 hover:border-gray-300"
+                    className="h-11 w-full rounded-xl border border-[#d8e0da] bg-[#fbfcfa] pl-10 pr-9 text-sm text-[#243a32] outline-none transition placeholder:text-[#9aa8a0] focus:border-[#32745d] focus:ring-4 focus:ring-[#32745d]/10"
                   />
                   {searchTerm && (
                     <motion.button
@@ -367,6 +303,23 @@ export default function SponsorsList() {
                     </motion.button>
                   )}
                 </motion.div>
+
+                {/* Add Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormDataEdit(null);
+                    setIsOpenCreateSponsor(true);
+                    setTitle("เพิ่มข้อมูล");
+                  }}
+                  disabled={!canCreate}
+                  className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[#176b56] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125844] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  <span className="material-symbols-rounded text-lg">
+                    person_add
+                  </span>
+                  เพิ่มข้อมูล
+                </button>
 
                 {/* Export Button */}
                 <motion.div
@@ -386,9 +339,9 @@ export default function SponsorsList() {
                     whileTap={{ scale: 0.98 }}
                     className={`${
                       canView && canCreate && canEdit
-                        ? "flex items-center bg-blue-600 text-white rounded-xl hover:bg-blue-700"
-                        : "flex items-center bg-gray-300 text-white rounded-xl hover:bg-gray-400"
-                    } gap-1 px-4 py-2.5  transition-colors shadow-sm w-full sm:w-auto`}
+                        ? "flex items-center border border-[#c8d8cf] bg-white text-[#176b56] hover:bg-[#edf5f0]"
+                        : "flex cursor-not-allowed items-center border border-gray-200 bg-gray-100 text-gray-400"
+                    } h-11 w-full gap-1.5 rounded-xl px-4 text-sm font-semibold shadow-sm transition-colors sm:w-auto`}
                     title={
                       canView && canCreate && canEdit
                         ? "ส่งออกข้อมูล"
@@ -438,31 +391,15 @@ export default function SponsorsList() {
             </div>
 
             {/* Info Box */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-5"
-            >
-              <div className="mb-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                <div className="flex items-start">
-                  <span className="material-symbols-outlined text-blue-500 mt-0.5 mr-2">
-                    info
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-medium text-blue-800">
-                      คำแนะนำการใช้งาน
-                    </h3>
-                    <p className="mt-1 text-sm text-blue-500">
-                      สามารถแก้ไขข้อมูลผู้เข้าร่วมและส่งออกข้อมูลเป็นไฟล์ Excel
-                      และ CSV
-                    </p>
-                    <p className=" text-[12px] text-red-500">
-                      หมายเหตุ ต้องได้รับสิทธิ์การเข้าถึงข้อมูลก่อนเท่านั้น
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#f6f8f5] px-4 py-3 text-xs text-[#718078] ring-1 ring-[#e7ede8]">
+              <span className="material-symbols-outlined mt-0.5 text-base text-[#176b56]">
+                info
+              </span>
+              <p>
+                แก้ไขข้อมูลและส่งออกเป็น Excel / CSV
+                ได้เฉพาะผู้ที่ได้รับสิทธิ์เข้าถึงข้อมูลเท่านั้น
+              </p>
+            </div>
 
             {/* Field Add Sponsor Container */}
 
@@ -473,97 +410,61 @@ export default function SponsorsList() {
                 animate={{ opacity: 1 }}
                 className="flex flex-col items-center justify-center py-12"
               >
-                <span className="material-symbols-rounded text-4xl text-blue-500 animate-spin mb-3">
+                <span className="material-symbols-rounded mb-3 animate-spin text-4xl text-[#176b56]">
                   progress_activity
                 </span>
                 <p className="text-gray-600">กำลังโหลดข้อมูล...</p>
               </motion.div>
             ) : (
-              <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead
-                    className={`bg-gradient-to-r from-blue-50 to-blue-100 hidden md:table-header-group`}
-                  >
+              <div className="mt-4 overflow-hidden rounded-xl border border-[#e4e9e4]">
+                <table className="min-w-full divide-y divide-[#edf0ed]">
+                  <thead className="hidden bg-[#f6f8f5] md:table-header-group">
                     <tr>
                       {[
-                        {
-                          key: "รายชื่อ",
-                          label: "รายชื่อ",
-                          icon: "summarize",
-                          point: "justify-start",
-                        },
+                        { key: "name", label: "รายชื่อ", align: "text-left" },
                         {
                           key: "companys",
                           label: "หน่วยงาน/บริษัท",
-                          icon: "roofing",
-                          point: "justify-start",
+                          align: "text-left",
                         },
                         {
                           key: "others",
                           label: "ข้อมูลอื่นๆ",
-                          icon: "package_2",
-                          point: "justify-start",
+                          align: "text-left",
                         },
-
                         {
-                          key: "การจัดการ",
+                          key: "actions",
                           label: "การจัดการ",
-                          icon: "border_color",
-                          point: "justify-end",
+                          align: "text-right",
                         },
                       ].map((header) => (
                         <th
                           key={header.key}
-                          className="px-3 py-2 md:px-4 md:py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+                          scope="col"
+                          className={`px-4 py-3.5 text-xs font-semibold text-[#52645b] ${header.align}`}
                         >
-                          <div
-                            className={`flex items-center gap-2 ${header.point} group-hover:border-gray-300`}
-                          >
-                            {/* Icon with modern styling */}
-                            <span className="material-symbols-outlined text-base text-blue-600 bg-blue-50 p-1.5 rounded-md">
-                              {header.icon}
-                            </span>
-
-                            {/* Label with conditional rendering */}
-                            <span className="font-medium text-gray-700 whitespace-nowrap">
-                              {header.key === "รายชื่อ" ? (
-                                <div className="flex items-center gap-3">
-                                  <span className="text-gray-800">
-                                    {header.label}
-                                  </span>
-                                  {/* Enhanced add button */}
-                                  <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-1"
-                                  >
-                                    {button_add()}
-                                  </motion.div>
-                                </div>
-                              ) : (
-                                header.label
-                              )}
-                            </span>
-                          </div>
+                          {header.label}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                  <tbody className="divide-y divide-[#edf0ed] bg-white">
                     {filtered.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={5}
-                          className="px-3 py-2 md:px-4 md:py-3 text-center text-sm text-gray-700"
-                        >
-                          ไม่พบข้อมูล
+                        <td colSpan={5} className="px-4 py-14 text-center">
+                          <p className="text-sm font-semibold text-[#34483e]">
+                            ไม่พบข้อมูล
+                          </p>
+                          <p className="mt-1 text-xs text-[#718078]">
+                            ลองเปลี่ยนปี ประเภทงาน หรือคำค้นหาอีกครั้ง
+                          </p>
                         </td>
                       </tr>
                     ) : (
                       filtered.map((user: any, index: number) => (
                         <tr
                           key={index}
-                          className="hover:bg-blue-50 transition-colors grid grid-cols-2 md:table-row gap-2 p-3 md:p-0"
+                          className="grid grid-cols-2 gap-2 p-3 transition-colors hover:bg-[#f9fbf9] md:table-row md:p-0"
                         >
                           <td className="whitespace-nowrap py-4 pl-4 pr-3">
                             <div className="flex items-center space-x-3">
@@ -587,7 +488,7 @@ export default function SponsorsList() {
                                   {user.email}
                                 </div>
                               </div>
-                              <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium text-sm">
+                              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#e8f2ed] text-sm font-semibold text-[#176b56]">
                                 {index + 1}
                               </div>
                             </div>
@@ -731,10 +632,10 @@ export default function SponsorsList() {
                                         setFormDataEdit(user); // handleOpenModalEdit(user);
                                       }
                                     }}
-                                    className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
+                                    className={`group flex items-center justify-center gap-1 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                                       canView && canEdit
-                                        ? "text-yellow-600 bg-gradient-to-b from-yellow-50 to-yellow-100/50 hover:from-yellow-100 hover:to-yellow-200/70 hover:text-yellow-700 border border-yellow-200/60 hover:border-yellow-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
-                                        : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
+                                        ? "bg-[#e8f2ed] text-[#125844] hover:bg-[#dcebe2]"
+                                        : "cursor-not-allowed bg-gray-100 text-gray-400"
                                     }`}
                                     disabled={!canView || !canEdit}
                                   >
@@ -761,10 +662,10 @@ export default function SponsorsList() {
                                         setId(user.sponserParticipantId);
                                       }
                                     }}
-                                    className={`group flex items-center justify-center gap-1 px-3 py-1 rounded-xl text-sm font-light  ${
+                                    className={`group flex items-center justify-center gap-1 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                                       canView && canDelete
-                                        ? "text-red-600 bg-gradient-to-b from-red-50 to-red-100/50 hover:from-red-100 hover:to-red-200/70 hover:text-red-700 border border-red-200/60 hover:border-red-300/80 hover:shadow-md cursor-pointer shadow-inner font-medium"
-                                        : "text-gray-400/80 bg-gradient-to-b from-gray-50 to-gray-100/50 border border-gray-200/60 cursor-not-allowed"
+                                        ? "bg-red-50 text-red-700 hover:bg-red-100"
+                                        : "cursor-not-allowed bg-gray-100 text-gray-400"
                                     }`}
                                     disabled={!canView || !canDelete}
                                   >

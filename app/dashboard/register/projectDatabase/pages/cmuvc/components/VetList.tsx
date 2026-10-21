@@ -75,6 +75,10 @@ const VetForm = memo(function VetForm({
     }
   };
 
+  const inputClass =
+    "w-full rounded-xl border border-[#d8e0da] bg-white px-4 py-2.5 text-sm text-[#243a32] outline-none transition placeholder:text-[#9aa8a0] focus:border-[#32745d] focus:ring-4 focus:ring-[#32745d]/10 disabled:cursor-not-allowed disabled:bg-gray-100";
+  const labelClass = "mb-1.5 block text-sm font-medium text-[#42544b]";
+
   return (
     <>
       <fieldset
@@ -82,49 +86,49 @@ const VetForm = memo(function VetForm({
         className="space-y-6 disabled:opacity-60 transition-opacity"
       >
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            ตำแหน่ง (เช่น ศ./ศ.พิเศษ/รศ./ผศ./ดร.)
+          <label className={labelClass}>
+            ตำแหน่ง{" "}
+            <span className="font-normal text-[#94a39a]">
+              (เช่น ศ. / รศ. / ผศ. / ดร.)
+            </span>{" "}
+            <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="prefix"
             value={data.prefix}
             onChange={handleChange}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className={inputClass}
             placeholder="ระบุตำแหน่ง"
           />
         </div>
 
         {/* ชื่อ-นามสกุล ภาษาไทย */}
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#718078]">
             <span className="material-symbols-outlined text-sm">translate</span>
-            ชื่อ-นามสกุล (ภาษาไทย)
+            ชื่อ-นามสกุล (ภาษาไทย) <span className="text-red-500">*</span>
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ชื่อ
-              </label>
+              <label className={labelClass}>ชื่อ</label>
               <input
                 type="text"
                 name="fname"
                 value={data.fname}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className={inputClass}
                 placeholder="ชื่อ"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                นามสกุล
-              </label>
+              <label className={labelClass}>นามสกุล</label>
               <input
                 type="text"
                 name="lname"
                 value={data.lname}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className={inputClass}
                 placeholder="นามสกุล"
               />
             </div>
@@ -133,34 +137,30 @@ const VetForm = memo(function VetForm({
 
         {/* ชื่อ-นามสกุล ภาษาอังกฤษ */}
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#718078]">
             <span className="material-symbols-outlined text-sm">language</span>
             ชื่อ-นามสกุล (ภาษาอังกฤษ)
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                First Name
-              </label>
+              <label className={labelClass}>First Name</label>
               <input
                 type="text"
                 name="fname_EN"
                 value={data.fname_EN}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className={inputClass}
                 placeholder="First Name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Name
-              </label>
+              <label className={labelClass}>Last Name</label>
               <input
                 type="text"
                 name="lname_EN"
                 value={data.lname_EN}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className={inputClass}
                 placeholder="Last Name"
               />
             </div>
@@ -168,25 +168,23 @@ const VetForm = memo(function VetForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            เลขใบอนุญาต
-          </label>
+          <label className={labelClass}>เลขใบอนุญาต</label>
           <input
             type="text"
             name="number_ce"
             value={data.number_ce}
             onChange={handleChange}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className={inputClass}
             placeholder="ระบุเลขใบอนุญาต"
           />
         </div>
       </fieldset>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-blue-200/70">
+      <div className="flex justify-end gap-2 border-t border-[#e4e9e4] pt-4">
         <button
           onClick={onCancel}
           disabled={isSubmitting}
-          className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex h-11 items-center gap-1.5 rounded-xl border border-[#d8e0da] bg-white px-5 text-sm font-semibold text-[#52645b] transition hover:bg-[#f4f6f4] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-base">close</span>
           ยกเลิก
@@ -194,7 +192,7 @@ const VetForm = memo(function VetForm({
         <button
           onClick={handleSubmitClick}
           disabled={isSubmitting}
-          className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md disabled:opacity-70 disabled:cursor-not-allowed min-w-[140px] justify-center"
+          className="inline-flex h-11 min-w-[140px] items-center justify-center gap-1.5 rounded-xl bg-[#176b56] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125844] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? (
             <>
@@ -538,7 +536,7 @@ export default function VetList() {
   return (
     <>
       <PermissionGuard submenuIdCode={SUB_MENU_ID} />
-      <div className="bg-gray-50 min-h-screen p-4 md:p-6">
+      <div>
         <LoadingModal isOpen={isLoading} progress={onUploadProgress} />
         <ToastNotification
           isVisible={toast.isVisible}
@@ -547,75 +545,55 @@ export default function VetList() {
           onClose={hideToast}
         />
 
-        <div className="bg-white rounded-2xl shadow-sm p-5 md:p-6 mb-6">
+        <div className="rounded-2xl border border-[#e4e9e4] bg-white p-5 shadow-[0_8px_30px_-24px_rgba(30,54,46,0.45)] md:p-6">
           {/* Header Section */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <span className="material-symbols-outlined text-blue-600 text-3xl">
-                    groups
+          <div className="mb-6 flex flex-col gap-4 border-b border-[#eef1ee] pb-5 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#176b56] text-white shadow-sm">
+                <span className="material-symbols-outlined text-2xl">
+                  stethoscope
+                </span>
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight text-[#243a32] md:text-2xl">
+                  รายชื่ออาจารย์และสัตวแพทย์
+                </h1>
+                <p className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-[#718078]">
+                  จัดการข้อมูลผู้เข้าร่วมโครงการ
+                  <span className="rounded-full bg-[#e8f2ed] px-2.5 py-0.5 text-xs font-semibold text-[#176b56]">
+                    ทั้งหมด {filteredVet.length.toLocaleString("th-TH")} คน
                   </span>
-                </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                    รายชื่ออาจารย์และสัตวแพทย์
-                  </h1>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
-                    <p className="text-gray-600 flex items-center gap-2 text-sm">
-                      <span className="material-symbols-outlined text-gray-500 text-base">
-                        description
-                      </span>
-                      จัดการข้อมูลผู้เข้าร่วมโครงการ
-                    </p>
-                    <p className="text-blue-700 flex items-center gap-2 text-sm font-medium bg-blue-50 px-3 py-1 rounded-full">
-                      <span className="material-symbols-outlined text-blue-600 text-base">
-                        checklist
-                      </span>
-                      รายชื่อทั้งหมด: {filteredVet.length} คน
-                    </p>
-                  </div>
-                </div>
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={handleExportExcel}
                 disabled={!canView || filteredVet.length === 0}
-                className={`flex items-center gap-2 px-5 py-3 rounded-xl min-w-[160px] justify-center transition-all duration-200 ${
-                  canView && filteredVet.length > 0
-                    ? "bg-green-600 text-white shadow-md hover:bg-green-700"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-[#c8d8cf] bg-white px-4 text-sm font-semibold text-[#176b56] transition hover:bg-[#edf5f0] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/15 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span className="material-symbols-outlined">download</span>
-                <span className="font-medium">ส่งออก Excel</span>
+                <span className="material-symbols-outlined text-lg">
+                  download
+                </span>
+                ส่งออก Excel
               </button>
 
               {/* ปุ่มเพิ่มข้อมูล (toggle dropdown) */}
               <button
                 onClick={() => canCreate && toggleAddPanel()}
                 disabled={!canCreate}
-                className={`flex items-center gap-2 px-5 py-3 rounded-xl min-w-[160px] justify-center ${
-                  canCreate
-                    ? isAddOpen
-                      ? "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
-                      : "bg-blue-600 text-white shadow-md hover:bg-blue-700"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                } transition-all duration-200`}
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#176b56] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125844] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <span className="material-symbols-outlined">
-                  {isAddOpen ? "expand_less" : "add"}
+                <span className="material-symbols-outlined text-lg">
+                  {isAddOpen ? "expand_less" : "person_add"}
                 </span>
-                <span className="font-medium">
-                  {canCreate
-                    ? isAddOpen
-                      ? "ปิดฟอร์ม"
-                      : "เพิ่มข้อมูล"
-                    : "ไม่มีสิทธิ์เพิ่มข้อมูล"}
-                </span>
+                {canCreate
+                  ? isAddOpen
+                    ? "ปิดฟอร์ม"
+                    : "เพิ่มข้อมูล"
+                  : "ไม่มีสิทธิ์เพิ่มข้อมูล"}
               </button>
             </div>
           </div>
@@ -630,10 +608,10 @@ export default function VetList() {
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="overflow-hidden mb-6"
               >
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 md:p-6 space-y-6">
+                <div className="rounded-2xl border border-[#cfe2d6] bg-[#f0f7f3] p-5 md:p-6 space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-blue-600 bg-blue-100 p-2 rounded-lg">
+                    <h3 className="flex items-center gap-2 text-base font-semibold text-[#243a32]">
+                      <span className="material-symbols-outlined rounded-lg bg-[#dcebe2] p-2 text-[#176b56]">
                         person_add
                       </span>
                       เพิ่มข้อมูลสัตวแพทย์
@@ -659,54 +637,61 @@ export default function VetList() {
           </AnimatePresence>
 
           {/* Filter Section */}
-          <div className="bg-gray-50 p-4 rounded-xl mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                    search
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="ค้นหาชื่อ, นามสกุล หรือ accountId..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
-              </div>
+          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-sm">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-xl text-[#94a39a]">
+                search
+              </span>
+              <input
+                type="search"
+                placeholder="ค้นหาชื่อ, นามสกุล หรือเลขใบอนุญาต..."
+                aria-label="ค้นหารายชื่อสัตวแพทย์"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-11 w-full rounded-xl border border-[#d8e0da] bg-[#fbfcfa] pl-10 pr-3 text-sm text-[#243a32] outline-none transition placeholder:text-[#9aa8a0] focus:border-[#32745d] focus:ring-4 focus:ring-[#32745d]/10"
+              />
             </div>
+            <p className="text-xs tabular-nums text-[#718078]">
+              แสดง {filteredVet.length.toLocaleString("th-TH")} จาก{" "}
+              {vets.length.toLocaleString("th-TH")} คน
+            </p>
           </div>
 
           {/* Table */}
-          <div className="rounded-xl overflow-hidden border border-gray-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+          <div className="rounded-xl overflow-hidden border border-[#e4e9e4]">
+            <div className="max-h-[600px] overflow-auto">
+              <table className="min-w-full divide-y divide-[#edf0ed]">
+                <thead className="sticky top-0 z-10 bg-[#f6f8f5] shadow-[0_1px_0_#e4e9e4]">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      บัญชีผู้ใช้
+                    <th
+                      scope="col"
+                      className="px-5 py-3.5 text-left text-xs font-semibold text-[#52645b]"
+                    >
+                      ชื่อ-นามสกุล
                     </th>
-
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-5 py-3.5 text-left text-xs font-semibold text-[#52645b]"
+                    >
                       เลขใบอนุญาต
                     </th>
-                    <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-5 py-3.5 text-right text-xs font-semibold text-[#52645b]"
+                    >
                       การจัดการ
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-[#edf0ed]">
                   {filteredVet.length > 0 ? (
                     filteredVet.map((vet) => (
                       <Fragment key={vet.accountId}>
-                        <tr className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                        <tr className="transition-colors hover:bg-[#f9fbf9]">
+                          <td className="px-5 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span className="material-symbols-outlined text-blue-600 text-sm">
-                                  person
-                                </span>
+                              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#e8f2ed] text-sm font-semibold text-[#176b56]">
+                                {vet.fname.trim().charAt(0) || "?"}
                               </div>
                               <div>
                                 <span className="text-sm font-medium text-gray-900">
@@ -729,22 +714,22 @@ export default function VetList() {
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-5 py-4 whitespace-nowrap">
                             <div
-                              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
                                 vet.number_ce
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-amber-100 text-amber-800"
+                                  ? "bg-[#e8f4ed] text-[#18794e]"
+                                  : "bg-[#f4efe5] text-[#8a6a33]"
                               }`}
                             >
-                              <span className="material-symbols-outlined text-xs">
+                              <span className="material-symbols-outlined text-sm">
                                 {vet.number_ce ? "verified" : "report"}
                               </span>
                               {vet.number_ce ? vet.number_ce : "ยังไม่ได้ระบุ"}
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <td className="px-5 py-4 whitespace-nowrap text-right">
                             <div className="flex flex-col items-end gap-3">
                               {/* ปุ่มจัดการ (ไม่มี animation) */}
                               <div className="flex justify-end gap-2">
@@ -752,22 +737,22 @@ export default function VetList() {
                                   <>
                                     <button
                                       onClick={handleConfirmDelete}
-                                      className="flex items-center gap-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                                      className="flex items-center gap-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
                                     >
                                       <span className="material-symbols-outlined text-base">
                                         delete_forever
                                       </span>
-                                      <span className="text-sm">ยืนยันลบ</span>
+                                      ยืนยันลบ
                                     </button>
 
                                     <button
                                       onClick={handleCancelDelete}
-                                      className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                                      className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
                                     >
                                       <span className="material-symbols-outlined text-base">
                                         close
                                       </span>
-                                      <span className="text-sm">ยกเลิก</span>
+                                      ยกเลิก
                                     </button>
                                   </>
                                 ) : (
@@ -777,13 +762,13 @@ export default function VetList() {
                                         canEdit && toggleEditPanel(vet)
                                       }
                                       disabled={!canEdit}
-                                      className={`flex items-center gap-1 px-4 py-2 rounded-lg ${
+                                      className={`flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                                         canEdit
                                           ? editingAccountId === vet.accountId
-                                            ? "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
-                                            : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                      } transition-colors`}
+                                            ? "border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                            : "bg-[#e8f2ed] text-[#125844] hover:bg-[#dcebe2]"
+                                          : "cursor-not-allowed bg-gray-100 text-gray-400"
+                                      }`}
                                     >
                                       <span className="material-symbols-outlined text-base">
                                         {!canEdit
@@ -792,13 +777,11 @@ export default function VetList() {
                                             ? "expand_less"
                                             : "edit"}
                                       </span>
-                                      <span className="text-sm">
-                                        {canEdit
-                                          ? editingAccountId === vet.accountId
-                                            ? "ปิดฟอร์ม"
-                                            : "แก้ไข"
-                                          : "ไม่มีสิทธิ์"}
-                                      </span>
+                                      {canEdit
+                                        ? editingAccountId === vet.accountId
+                                          ? "ปิดฟอร์ม"
+                                          : "แก้ไข"
+                                        : "ไม่มีสิทธิ์"}
                                     </button>
 
                                     <button
@@ -807,18 +790,16 @@ export default function VetList() {
                                         handleDeleteClick(vet.accountId)
                                       }
                                       disabled={!canDelete}
-                                      className={`flex items-center gap-1 px-4 py-2 rounded-lg ${
+                                      className={`flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                                         canDelete
                                           ? "bg-red-50 text-red-700 hover:bg-red-100"
-                                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                      } transition-colors`}
+                                          : "cursor-not-allowed bg-gray-100 text-gray-400"
+                                      }`}
                                     >
                                       <span className="material-symbols-outlined text-base">
                                         {canDelete ? "delete" : "block"}
                                       </span>
-                                      <span className="text-sm">
-                                        {canDelete ? "ลบ" : "ไม่มีสิทธิ์ลบ"}
-                                      </span>
+                                      {canDelete ? "ลบ" : "ไม่มีสิทธิ์ลบ"}
                                     </button>
                                   </>
                                 )}
@@ -874,7 +855,7 @@ export default function VetList() {
                             >
                               <td
                                 colSpan={4}
-                                className="p-0 bg-blue-50/60 border-t border-blue-100"
+                                className="border-t border-[#d8e6dd] bg-[#f0f7f3] p-0"
                               >
                                 <motion.div
                                   initial={{ height: 0, opacity: 0 }}
@@ -888,8 +869,8 @@ export default function VetList() {
                                 >
                                   <div className="p-5 md:p-6 space-y-6">
                                     <div className="flex items-center justify-between">
-                                      <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-blue-600 bg-blue-100 p-1.5 rounded-lg text-lg">
+                                      <h3 className="flex items-center gap-2 text-base font-semibold text-[#243a32]">
+                                        <span className="material-symbols-outlined rounded-lg bg-[#dcebe2] p-1.5 text-lg text-[#176b56]">
                                           edit
                                         </span>
                                         แก้ไขข้อมูลสัตวแพทย์
@@ -922,14 +903,14 @@ export default function VetList() {
                   ) : (
                     <tr>
                       <td colSpan={4} className="px-6 py-12 text-center">
-                        <div className="flex flex-col items-center justify-center text-gray-400 py-8">
-                          <span className="material-symbols-outlined text-5xl mb-4 opacity-50">
+                        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                          <span className="material-symbols-outlined mb-4 text-5xl text-[#c3ccc5]">
                             search_off
                           </span>
-                          <p className="text-lg font-medium text-gray-500 mb-1">
+                          <p className="mb-1 text-sm font-semibold text-[#34483e]">
                             ไม่พบข้อมูลผู้เข้าร่วม
                           </p>
-                          <p className="text-sm">
+                          <p className="text-xs text-[#718078]">
                             ลองเปลี่ยนคำค้นหาหรือตรวจสอบข้อมูลอีกครั้ง
                           </p>
                         </div>

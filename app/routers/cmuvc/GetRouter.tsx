@@ -409,15 +409,17 @@ export const GetCheckin = async (
 export const GetCheckinNew = async (
   date: Date,
   title?: string,
+  projectType?: string,
 ): Promise<ApiResponse> => {
   try {
     if (!isValidDate(date)) {
       throw new Error("Missing or invalid date");
     }
     const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY_CRYPTO_FRONTEND ?? "";
-    const payload: { year: number; title?: string } = {
+    const payload: { year: number; title?: string; projectType?: string } = {
       year: date.getFullYear(),
       title: sanitizeText(title),
+      projectType: sanitizeText(projectType),
     };
 
     const encryptedData = CryptoJS.AES.encrypt(

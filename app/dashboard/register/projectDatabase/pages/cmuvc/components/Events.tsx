@@ -3,8 +3,8 @@ import { useUser } from "@/app/context/UserContext";
 import { GetCheckinNew } from "@/app/routers/cmuvc/GetRouter";
 import PermissionGuard from "@/components/Guards/PermissionGuard";
 import Loading from "@/components/Loadings/Loading";
-import { Download, Search, ScanLine } from "lucide-react";
-import { useState } from "react";
+import { Check, Download, Loader2, ScanLine, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -42,15 +42,29 @@ interface EventDetails {
   category?: string | null;
 }
 
-const EVENT_OPTIONS: { label: string; value: EventType }[] = [
-  { label: "VET", value: "vet" },
-  { label: "PARTICIPANT", value: "pat" },
-  { label: "PARTICIPANT SPONSOR", value: "patsponser" },
-  { label: "PARTICIPANT BOOTH", value: "patboot" },
+const PROJECT_TYPE: { label: string; value: "pre" | "main" }[] = [
+  { label: "PRE-CONGRESS", value: "pre" },
+  { label: "MAIN CONFERENCE", value: "main" },
 ];
 
-const isEventType = (value: string): value is EventType =>
-  EVENT_OPTIONS.some((option) => option.value === value);
+const EVENT_OPTIONS: {
+  label: string;
+  value: EventType;
+  description: string;
+}[] = [
+  { label: "VET", value: "vet", description: "สัตวแพทย์" },
+  { label: "PARTICIPANT", value: "pat", description: "ผู้เข้าร่วมทั่วไป" },
+  {
+    label: "PARTICIPANT SPONSOR",
+    value: "patsponser",
+    description: "ผู้เข้าร่วมจากสปอนเซอร์",
+  },
+  {
+    label: "PARTICIPANT BOOTH",
+    value: "patboot",
+    description: "ผู้เข้าร่วมประจำบูธ",
+  },
+];
 
 const getEventDetails = (
   row: CheckinRecord,
@@ -118,28 +132,60 @@ const getCheckinDays = (row: CheckinRecord, year: number) => {
 export default function Events() {
   const { loading } = useUser();
   const [users, setUsers] = useState<CheckinRecord[]>([]);
-  const [selectedTitleTheme, setSelectedTitleTheme] = useState<EventType>("vet");
+  const [selectedTitleTheme, setSelectedTitleTheme] =
+    useState<EventType>("vet");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedProjectType, setSelectedProjectType] = useState<
+    "pre" | "main"
+  >("pre");
   const [scannedSelection, setScannedSelection] = useState<{
     title: EventType;
     year: number;
   } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { canView } = usePermission(SUB_MENU_ID, PROJECT_ID);
   const yearOptions = Array.from({ length: 6 }, (_, index) => {
     const year = new Date().getFullYear() - index;
     return { value: year, label: String(year) };
   });
 
+  const filteredUsers = useMemo(() => {
+    if (!scannedSelection) return users;
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return users;
+    return users.filter((row) => {
+      const details = getEventDetails(row, scannedSelection.title);
+      return [details.fname, details.lname, details.ce, details.category].some(
+        (value) =>
+          String(value ?? "")
+            .toLowerCase()
+            .includes(query),
+      );
+    });
+  }, [users, searchQuery, scannedSelection]);
+
+  const dayStats = useMemo(() => {
+    if (!scannedSelection || users.length === 0) return [];
+    return getCheckinDayLabels(scannedSelection.year).map((label, index) => ({
+      label,
+      count: users.filter(
+        (row) => getCheckinDays(row, scannedSelection.year)[index]?.checked,
+      ).length,
+    }));
+  }, [users, scannedSelection]);
+
   const handleScan = async () => {
     setIsScanning(true);
     setUsers([]);
     setScannedSelection(null);
+    setSearchQuery("");
 
     try {
       const response = await GetCheckinNew(
         new Date(selectedYear, 0, 1),
         selectedTitleTheme,
+        selectedProjectType,
       );
       if (!response.success) {
         toast.error("เกิดข้อผิดพลาดในการดึงข้อมูล");
@@ -251,7 +297,10 @@ export default function Events() {
           header.length,
         );
         const column = sheet.getColumn(index + 1);
-        column.width = Math.min(maxWidths[index], Math.max(10, longestValue + 2));
+        column.width = Math.min(
+          maxWidths[index],
+          Math.max(10, longestValue + 2),
+        );
         column.alignment = {
           vertical: "middle",
           horizontal: index >= 3 ? "center" : "left",
@@ -314,7 +363,7 @@ export default function Events() {
     <>
       <PermissionGuard submenuIdCode={SUB_MENU_ID} />
       <main className="mx-auto max-w-[1440px] space-y-6 px-3 pb-8 pt-2 sm:px-6">
-        <section className="relative isolate overflow-hidden rounded-[28px] bg-[#173c34] px-6 py-7 text-white shadow-[0_20px_60px_-35px_rgba(23,60,52,0.75)] sm:px-9 sm:py-9">
+        <header className="relative isolate overflow-hidden rounded-[28px] bg-[#173c34] px-6 py-7 text-white shadow-[0_20px_60px_-35px_rgba(23,60,52,0.75)] sm:px-9">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -right-16 -top-28 h-80 w-80 rounded-full border border-white/10"
@@ -323,86 +372,168 @@ export default function Events() {
             aria-hidden="true"
             className="pointer-events-none absolute -right-4 -top-16 h-56 w-56 rounded-full border border-white/10"
           />
-          <div className="relative flex flex-col justify-between gap-8 sm:flex-row sm:items-end">
-            <div className="max-w-2xl">
-              <p className="mb-3 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#bad8c8]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#d8ac69]" />
-                CMU VETERINARY · EVENT ARCHIVE
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                ตรวจสอบการเข้าร่วมกิจกรรม
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-white/70 sm:text-base">
-                เลือกประเภทผู้เข้าร่วมและปีที่ต้องการ จากนั้นกดสแกนเพื่อดึงข้อมูล
-                ก่อนตรวจสอบหรือส่งออกเป็น Excel
-              </p>
-            </div>
-            <div className="flex items-center gap-3 self-start rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-3 sm:self-auto">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#d8ac69] text-[#173c34]">
-                <ScanLine size={21} aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/55">
-                  Archive range
-                </p>
-                <p className="mt-0.5 text-sm font-semibold">ย้อนหลัง 5 ปี</p>
-              </div>
-            </div>
+          <div className="relative">
+            <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#bad8c8]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#d8ac69]" />
+              CMU VETERINARY · EVENT ARCHIVE
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              ตรวจสอบการเข้าร่วมกิจกรรม
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
+              ดึงข้อมูลการเช็คอินย้อนหลัง 5 ปี
+              และส่งออกรายงานเป็นไฟล์ Excel ได้ในหน้าเดียว
+            </p>
+            <ol className="mt-5 flex flex-wrap items-center gap-2 text-xs font-medium text-white/85">
+              {[
+                "เลือกเงื่อนไข",
+                "กดสแกนข้อมูล",
+                "ตรวจสอบ / ส่งออก Excel",
+              ].map((step, index) => (
+                <li key={step} className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 py-1.5 pl-1.5 pr-3">
+                    <span className="grid h-5 w-5 place-items-center rounded-full bg-[#d8ac69] text-[11px] font-bold text-[#173c34]">
+                      {index + 1}
+                    </span>
+                    {step}
+                  </span>
+                  {index < 2 && (
+                    <span aria-hidden="true" className="text-white/40">
+                      →
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
           </div>
-        </section>
+        </header>
 
         <section
           aria-label="เลือกข้อมูลสำหรับสแกน"
-          className="rounded-2xl border border-[#e4e9e4] bg-white p-5 shadow-[0_8px_30px_-24px_rgba(30,54,46,0.45)] sm:p-6"
+          className="space-y-6 rounded-2xl border border-[#e4e9e4] bg-white p-5 shadow-[0_8px_30px_-24px_rgba(30,54,46,0.45)] sm:p-6"
         >
-          <div className="mb-5 flex items-center gap-3">
-            <span className="h-8 w-1 rounded-full bg-[#b58a4c]" />
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#176b56] text-sm font-bold text-white">
+              1
+            </span>
             <div>
               <h2 className="text-base font-semibold text-[#243a32]">
-                กำหนดข้อมูลที่ต้องการ
+                เลือกเงื่อนไขข้อมูล
               </h2>
               <p className="mt-0.5 text-xs text-[#718078]">
-                ต้องสแกนก่อนทุกครั้ง จึงจะแสดงและส่งออกข้อมูลได้
+                เมื่อเปลี่ยนเงื่อนไข ต้องกดสแกนใหม่ทุกครั้ง
               </p>
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)_auto] md:items-end">
-            <div>
-              <label
-                htmlFor="event-type"
-                className="mb-2 block text-xs font-semibold text-[#52645b]"
-              >
-                ประเภทผู้เข้าร่วม
-              </label>
-              <select
-                id="event-type"
-                value={selectedTitleTheme}
-                disabled={isScanning}
-                onChange={(event) => {
-                  if (isEventType(event.currentTarget.value)) {
-                    setSelectedTitleTheme(event.currentTarget.value);
-                    setUsers([]);
-                    setScannedSelection(null);
-                  }
-                }}
-                className="h-12 w-full rounded-xl border border-[#d8e0da] bg-[#fbfcfa] px-3.5 text-sm text-[#243a32] outline-none transition focus-visible:border-[#32745d] focus-visible:ring-4 focus-visible:ring-[#32745d]/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {EVENT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
+          <fieldset>
+            <legend className="mb-2 text-xs font-semibold text-[#52645b]">
+              ประเภทโครงการ
+            </legend>
+            <div
+              role="radiogroup"
+              aria-label="ประเภทโครงการ"
+              className="grid grid-cols-2 gap-1.5 rounded-xl bg-[#eef3ef] p-1.5"
+            >
+              {PROJECT_TYPE.map((option) => {
+                const active = selectedProjectType === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={isScanning}
+                    onClick={() => {
+                      setSelectedProjectType(option.value);
+                      setUsers([]);
+                      setScannedSelection(null);
+                      setSearchQuery("");
+                    }}
+                    className={`h-11 rounded-lg text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 disabled:cursor-not-allowed disabled:opacity-60 ${
+                      active
+                        ? "bg-white text-[#125844] shadow-sm ring-1 ring-[#d8e0da]"
+                        : "text-[#617168] hover:text-[#243a32]"
+                    }`}
+                  >
                     {option.label}
-                  </option>
-                ))}
-              </select>
+                  </button>
+                );
+              })}
             </div>
+          </fieldset>
 
+          <fieldset>
+            <legend className="mb-2 text-xs font-semibold text-[#52645b]">
+              ประเภทผู้เข้าร่วม
+            </legend>
+            <div
+              role="radiogroup"
+              aria-label="ประเภทผู้เข้าร่วม"
+              className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+            >
+              {EVENT_OPTIONS.map((option) => {
+                const active = selectedTitleTheme === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={isScanning}
+                    onClick={() => {
+                      setSelectedTitleTheme(option.value);
+                      setUsers([]);
+                      setScannedSelection(null);
+                      setSearchQuery("");
+                    }}
+                    className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 disabled:cursor-not-allowed disabled:opacity-60 ${
+                      active
+                        ? "border-[#176b56] bg-[#f0f7f3]"
+                        : "border-[#dfe6e1] bg-[#fbfcfa] hover:border-[#aec4b6]"
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${
+                        active
+                          ? "border-[#176b56] bg-[#176b56] text-white"
+                          : "border-[#c4d0c7] text-transparent"
+                      }`}
+                    >
+                      <Check size={12} strokeWidth={3} />
+                    </span>
+                    <span>
+                      <span
+                        className={`block text-sm font-semibold leading-5 ${
+                          active ? "text-[#125844]" : "text-[#34483e]"
+                        }`}
+                      >
+                        {option.label}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-[#718078]">
+                        {option.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <div className="grid gap-4 border-t border-[#eef1ee] pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <div>
-              <label
-                htmlFor="event-year"
-                className="mb-2 block text-xs font-semibold text-[#52645b]"
-              >
-                ปีที่จัดกิจกรรม
-              </label>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="grid h-5 w-5 place-items-center rounded-md bg-[#e8f2ed] text-[11px] font-bold text-[#176b56]">
+                  2
+                </span>
+                <label
+                  htmlFor="event-year"
+                  className="text-xs font-semibold text-[#52645b]"
+                >
+                  เลือกปีที่จัดกิจกรรม แล้วกดสแกน
+                </label>
+              </div>
               <select
                 id="event-year"
                 value={selectedYear}
@@ -413,9 +544,10 @@ export default function Events() {
                     setSelectedYear(year);
                     setUsers([]);
                     setScannedSelection(null);
+                    setSearchQuery("");
                   }
                 }}
-                className="h-12 w-full rounded-xl border border-[#d8e0da] bg-[#fbfcfa] px-3.5 text-sm text-[#243a32] outline-none transition focus-visible:border-[#32745d] focus-visible:ring-4 focus-visible:ring-[#32745d]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-12 w-full max-w-xs rounded-xl border border-[#d8e0da] bg-[#fbfcfa] px-3.5 text-sm text-[#243a32] outline-none transition focus-visible:border-[#32745d] focus-visible:ring-4 focus-visible:ring-[#32745d]/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {yearOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -429,9 +561,17 @@ export default function Events() {
               type="button"
               onClick={handleScan}
               disabled={isScanning}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#176b56] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125844] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 disabled:cursor-wait disabled:opacity-70 md:min-w-40"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#176b56] px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125844] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 disabled:cursor-wait disabled:opacity-70 sm:min-w-48"
             >
-              <Search size={17} aria-hidden="true" />
+              {isScanning ? (
+                <Loader2
+                  size={17}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <ScanLine size={17} aria-hidden="true" />
+              )}
               {isScanning ? "กำลังสแกน..." : "สแกนข้อมูล"}
             </button>
           </div>
@@ -439,37 +579,68 @@ export default function Events() {
 
         {scannedSelection ? (
           <section className="overflow-hidden rounded-2xl border border-[#e4e9e4] bg-white shadow-[0_8px_30px_-24px_rgba(30,54,46,0.45)]">
-            <div className="flex flex-col gap-4 border-b border-[#e9eeea] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base font-semibold text-[#243a32]">
-                    รายชื่อผู้เข้าร่วม
-                  </h2>
-                  <span className="rounded-full bg-[#e8f2ed] px-2.5 py-1 text-[11px] font-semibold text-[#176b56]">
-                    {scannedSelection.year}
+            <div className="border-b border-[#e9eeea] px-5 py-5 sm:px-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#176b56] text-sm font-bold text-white">
+                    3
                   </span>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-base font-semibold text-[#243a32]">
+                        ผลการสแกน
+                      </h2>
+                      <span className="rounded-full bg-[#e8f2ed] px-2.5 py-1 text-[11px] font-semibold text-[#176b56]">
+                        {EVENT_OPTIONS.find(
+                          (option) => option.value === scannedSelection.title,
+                        )?.label ?? scannedSelection.title}
+                      </span>
+                      <span className="rounded-full bg-[#f4efe5] px-2.5 py-1 text-[11px] font-semibold text-[#8a6a33]">
+                        ปี {scannedSelection.year}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-[#718078]">
+                      พบ {users.length.toLocaleString("th-TH")} รายการ
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-1 text-xs text-[#718078]">
-                  {EVENT_OPTIONS.find(
-                    (option) => option.value === scannedSelection.title,
-                  )?.label}{" "}
-                  · {users.length.toLocaleString("th-TH")} รายการ
-                </p>
+                <button
+                  type="button"
+                  onClick={handleExportXlsx}
+                  disabled={users.length === 0}
+                  title={
+                    users.length === 0
+                      ? "ไม่พบข้อมูลสำหรับส่งออก"
+                      : "ส่งออกผลสแกนเป็น Excel"
+                  }
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#176b56] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125844] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Download size={16} aria-hidden="true" />
+                  ส่งออก Excel
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleExportXlsx}
-                disabled={users.length === 0}
-                title={
-                  users.length === 0
-                    ? "ไม่พบข้อมูลสำหรับส่งออก"
-                    : "ส่งออกผลสแกนเป็น Excel"
-                }
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#c8d8cf] bg-[#f7faf7] px-4 text-sm font-semibold text-[#176b56] transition hover:border-[#176b56] hover:bg-[#edf5f0] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/15 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Download size={16} aria-hidden="true" />
-                ส่งออก Excel
-              </button>
+
+              {users.length > 0 && (
+                <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {dayStats.map(({ label, count }) => (
+                    <div
+                      key={label}
+                      className="rounded-xl bg-[#f6f8f5] px-3.5 py-2.5 ring-1 ring-[#e7ede8]"
+                    >
+                      <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#718078]">
+                        {label} · เช็คอิน
+                      </dt>
+                      <dd className="mt-0.5 text-sm font-bold tabular-nums text-[#243a32]">
+                        {count.toLocaleString("th-TH")}
+                        <span className="text-xs font-medium text-[#8b978f]">
+                          {" "}
+                          / {users.length.toLocaleString("th-TH")}
+                        </span>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </div>
 
             {users.length === 0 ? (
@@ -485,78 +656,130 @@ export default function Events() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] border-collapse text-left">
-                  <thead className="bg-[#f6f8f5]">
-                    <tr>
-                      {[
-                        "ชื่อ - นามสกุล",
-                        "CE",
-                        "ประเภท",
-                        ...getCheckinDayLabels(scannedSelection.year),
-                      ].map((heading) => (
-                        <th
-                          key={heading}
-                          scope="col"
-                          className="px-4 py-3.5 text-xs font-semibold text-[#52645b] first:pl-6 last:pr-6"
-                        >
-                          {heading}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#edf0ed]">
-                    {users.map((row, rowIndex) => {
-                      const details = getEventDetails(
-                        row,
-                        scannedSelection.title,
-                      );
-                      const checkinDays = getCheckinDays(row, scannedSelection.year);
+              <>
+                <div className="flex flex-col gap-2 border-b border-[#e9eeea] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div className="relative w-full sm:max-w-xs">
+                    <Search
+                      size={16}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#94a39a]"
+                    />
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={(event) =>
+                        setSearchQuery(event.currentTarget.value)
+                      }
+                      placeholder="ค้นหาชื่อ, CE หรือประเภท..."
+                      aria-label="ค้นหาในผลการสแกน"
+                      className="h-10 w-full rounded-xl border border-[#d8e0da] bg-[#fbfcfa] pl-9 pr-3 text-sm text-[#243a32] outline-none transition placeholder:text-[#9aa8a0] focus-visible:border-[#32745d] focus-visible:ring-4 focus-visible:ring-[#32745d]/10"
+                    />
+                  </div>
+                  <p className="text-xs tabular-nums text-[#718078]">
+                    แสดง {filteredUsers.length.toLocaleString("th-TH")} จาก{" "}
+                    {users.length.toLocaleString("th-TH")} รายการ
+                  </p>
+                </div>
 
-                      return (
-                        <tr
-                          key={
-                            row.timetableId ??
-                            `${scannedSelection.year}-${rowIndex}`
-                          }
-                          className="transition-colors hover:bg-[#f9fbf9]"
-                        >
-                          <td className="px-4 py-3.5 pl-6 text-sm font-medium text-[#293d34]">
-                            {[details.fname, details.lname]
-                              .filter(Boolean)
-                              .join(" ") || "—"}
-                          </td>
-                          <td className="px-4 py-3.5 text-sm tabular-nums text-[#617168]">
-                            {details.ce ?? "—"}
-                          </td>
-                          <td className="px-4 py-3.5 text-sm text-[#617168]">
-                            {details.category ?? "—"}
-                          </td>
-                          {checkinDays.map(({ checked, label }) => (
-                            <td
-                              key={label}
-                              className="px-4 py-3.5 text-center"
+                {filteredUsers.length === 0 ? (
+                  <div className="px-6 py-14 text-center">
+                    <p className="text-sm font-semibold text-[#34483e]">
+                      ไม่พบรายชื่อที่ตรงกับ “{searchQuery.trim()}”
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="mt-3 inline-flex h-9 items-center rounded-xl border border-[#c8d8cf] px-4 text-xs font-semibold text-[#176b56] transition hover:bg-[#edf5f0] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#176b56]/15"
+                    >
+                      ล้างการค้นหา
+                    </button>
+                  </div>
+                ) : (
+                  <div className="max-h-[560px] overflow-auto">
+                    <table className="w-full min-w-[900px] border-collapse text-left">
+                      <thead className="sticky top-0 z-10 bg-[#f6f8f5] shadow-[0_1px_0_#e4e9e4]">
+                        <tr>
+                          {[
+                            "ชื่อ - นามสกุล",
+                            "CE",
+                            "ประเภท",
+                            ...getCheckinDayLabels(scannedSelection.year),
+                          ].map((heading, index) => (
+                            <th
+                              key={heading}
+                              scope="col"
+                              className={`px-4 py-3.5 text-xs font-semibold text-[#52645b] first:pl-6 last:pr-6 ${
+                                index >= 3 ? "text-center" : ""
+                              }`}
                             >
-                              <span
-                                aria-label={
-                                  checked ? "เช็คอินแล้ว" : "ยังไม่เช็คอิน"
-                                }
-                                className={`inline-flex min-w-20 justify-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                                  checked
-                                    ? "bg-[#e8f4ed] text-[#18794e]"
-                                    : "bg-[#f4f2ed] text-[#857657]"
-                                }`}
-                              >
-                                {checked ? "เช็คอินแล้ว" : "—"}
-                              </span>
-                            </td>
+                              {heading}
+                            </th>
                           ))}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-[#edf0ed]">
+                        {filteredUsers.map((row, rowIndex) => {
+                          const details = getEventDetails(
+                            row,
+                            scannedSelection.title,
+                          );
+                          const checkinDays = getCheckinDays(
+                            row,
+                            scannedSelection.year,
+                          );
+
+                          return (
+                            <tr
+                              key={
+                                row.timetableId ??
+                                `${scannedSelection.year}-${rowIndex}`
+                              }
+                              className="transition-colors hover:bg-[#f9fbf9]"
+                            >
+                              <td className="px-4 py-3.5 pl-6 text-sm font-medium text-[#293d34]">
+                                {[details.fname, details.lname]
+                                  .filter(Boolean)
+                                  .join(" ") || "—"}
+                              </td>
+                              <td className="px-4 py-3.5 text-sm tabular-nums text-[#617168]">
+                                {details.ce ?? "—"}
+                              </td>
+                              <td className="px-4 py-3.5 text-sm text-[#617168]">
+                                {details.category ?? "—"}
+                              </td>
+                              {checkinDays.map(({ checked, label }) => (
+                                <td
+                                  key={label}
+                                  className="px-4 py-3.5 text-center"
+                                >
+                                  {checked ? (
+                                    <span className="inline-flex min-w-24 items-center justify-center gap-1 rounded-full bg-[#e8f4ed] px-2.5 py-1 text-[11px] font-semibold text-[#18794e]">
+                                      <Check
+                                        size={12}
+                                        strokeWidth={3}
+                                        aria-hidden="true"
+                                      />
+                                      เช็คอินแล้ว
+                                      <span className="sr-only">({label})</span>
+                                    </span>
+                                  ) : (
+                                    <span
+                                      aria-label={`${label}: ยังไม่เช็คอิน`}
+                                      className="text-sm text-[#c3ccc5]"
+                                    >
+                                      —
+                                    </span>
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </section>
         ) : (

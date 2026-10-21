@@ -10,14 +10,10 @@ import {
   List,
   Store,
   Stethoscope,
-  GraduationCap,
-  BadgeCheck,
-  UserCog,
   CalendarDays,
   Settings,
   ChevronLeft,
   ChevronRight,
-  Menu,
   ChevronDown,
 } from "lucide-react";
 
@@ -36,56 +32,12 @@ import SponsorsBootsList from "./components/SponsorsBootsList";
 import Events from "./components/Events";
 import packageVersion from "@/package.json";
 
-// Menu theme configuration — one clear accent color per section (used sparingly: icon + active state only)
-const menuThemes = {
-  dashboards: {
-    accent: "bg-violet-500",
-    text: "text-violet-600",
-    active: "bg-violet-50 text-violet-700",
-    ring: "ring-violet-200",
-  },
-  participants: {
-    accent: "bg-blue-500",
-    text: "text-blue-600",
-    active: "bg-blue-50 text-blue-700",
-    ring: "ring-blue-200",
-  },
-  sponsors: {
-    accent: "bg-emerald-500",
-    text: "text-emerald-600",
-    active: "bg-emerald-50 text-emerald-700",
-    ring: "ring-emerald-200",
-  },
-  veterinary: {
-    accent: "bg-rose-500",
-    text: "text-rose-600",
-    active: "bg-rose-50 text-rose-700",
-    ring: "ring-rose-200",
-  },
-  students: {
-    accent: "bg-amber-500",
-    text: "text-amber-600",
-    active: "bg-amber-50 text-amber-700",
-    ring: "ring-amber-200",
-  },
-  personnel: {
-    accent: "bg-indigo-500",
-    text: "text-indigo-600",
-    active: "bg-indigo-50 text-indigo-700",
-    ring: "ring-indigo-200",
-  },
-  events: {
-    accent: "bg-fuchsia-500",
-    text: "text-fuchsia-600",
-    active: "bg-fuchsia-50 text-fuchsia-700",
-    ring: "ring-fuchsia-200",
-  },
-  settings: {
-    accent: "bg-slate-500",
-    text: "text-slate-600",
-    active: "bg-slate-100 text-slate-700",
-    ring: "ring-slate-200",
-  },
+// Menu theme — single green accent for the whole CMUVC section (used sparingly: icon + active state only)
+const menuTheme = {
+  accent: "bg-[#176b56]",
+  text: "text-[#176b56]",
+  active: "bg-[#e8f2ed] text-[#125844]",
+  ring: "ring-[#c9ded2]",
 };
 
 export default function CmuvcPage() {
@@ -117,7 +69,7 @@ export default function CmuvcPage() {
           stiffness: 300,
           mass: 0.8,
         }}
-        className="bg-white flex flex-col  "
+        className="bg-white flex flex-col border-r border-[#e4e9e4]"
       >
         {/* Header */}
         <div className="h-16 shrink-0 px-4 flex items-center justify-between border-b border-gray-100">
@@ -130,15 +82,15 @@ export default function CmuvcPage() {
                 exit={{ opacity: 0, transition: { duration: 0.1 } }}
                 className="flex items-center gap-2.5 min-w-0"
               >
-                <div className="w-8 h-8 shrink-0 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <Menu className="w-4.5 h-4.5 text-white" />
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-[#176b56] flex items-center justify-center shadow-sm">
+                  <Stethoscope className="w-4.5 h-4.5 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="font-semibold text-[15px] text-gray-900 leading-tight truncate">
+                  <h2 className="font-semibold text-[15px] text-[#173c34] leading-tight truncate">
                     CMUVC
                   </h2>
                   <p className="text-[11px] text-gray-400 leading-tight truncate">
-                    Management System
+                    ระบบจัดการงานสัมมนา
                   </p>
                 </div>
               </motion.div>
@@ -166,9 +118,9 @@ export default function CmuvcPage() {
             active={activeMenu === "dashboards"}
             onClick={() => setActiveMenu("dashboards")}
             icon={LayoutDashboard}
-            label="Dashboards"
+            label="แดชบอร์ด"
+            subLabel="Dashboards"
             collapsed={collapsed}
-            theme={menuThemes.dashboards}
           />
 
           {/* Participants Dropdown */}
@@ -178,30 +130,28 @@ export default function CmuvcPage() {
               activeMenu === "participants_pre"
             }
             icon={Users}
-            label="Participants"
+            label="ผู้เข้าร่วมงาน"
+            subLabel="Participants"
             collapsed={collapsed}
             isDropdown
             isOpen={openDropdown === "participants"}
             toggleDropdown={() => toggleDropdown("participants")}
-            theme={menuThemes.participants}
           >
             <MenuItem
               active={activeMenu === "participants_main"}
               onClick={() => setActiveMenu("participants_main")}
               icon={Mic}
-              label="Main Conference"
+              label="งานสัมมนาหลัก"
               collapsed={collapsed}
               isSubItem
-              theme={menuThemes.participants}
             />
             <MenuItem
               active={activeMenu === "participants_pre"}
               onClick={() => setActiveMenu("participants_pre")}
               icon={CalendarCheck}
-              label="Pre Congress"
+              label="กิจกรรมก่อนสัมมนา"
               collapsed={collapsed}
               isSubItem
-              theme={menuThemes.participants}
             />
           </MenuItem>
 
@@ -209,30 +159,28 @@ export default function CmuvcPage() {
           <MenuItem
             active={activeMenu === "sponsors" || activeMenu === "sponsor_boot"}
             icon={Building2}
-            label="Sponsors"
+            label="ผู้สนับสนุน"
+            subLabel="Sponsors"
             collapsed={collapsed}
             isDropdown
             isOpen={openDropdown === "sponsors"}
             toggleDropdown={() => toggleDropdown("sponsors")}
-            theme={menuThemes.sponsors}
           >
             <MenuItem
               active={activeMenu === "sponsors"}
               onClick={() => setActiveMenu("sponsors")}
               icon={List}
-              label="Sponsors List"
+              label="รายชื่อผู้สนับสนุน"
               collapsed={collapsed}
               isSubItem
-              theme={menuThemes.sponsors}
             />
             <MenuItem
               active={activeMenu === "sponsor_boot"}
               onClick={() => setActiveMenu("sponsor_boot")}
               icon={Store}
-              label="Sponsors Boots"
+              label="ผู้สนับสนุนบูธ"
               collapsed={collapsed}
               isSubItem
-              theme={menuThemes.sponsors}
             />
           </MenuItem>
 
@@ -240,21 +188,20 @@ export default function CmuvcPage() {
           <MenuItem
             active={activeMenu === "vet"}
             icon={Stethoscope}
-            label="Veterinary"
+            label="สัตวแพทย์"
+            subLabel="Veterinary"
             collapsed={collapsed}
             isDropdown
             isOpen={openDropdown === "veterinary"}
             toggleDropdown={() => toggleDropdown("veterinary")}
-            theme={menuThemes.veterinary}
           >
             <MenuItem
               active={activeMenu === "vet"}
               onClick={() => setActiveMenu("vet")}
               icon={Stethoscope}
-              label="VET"
+              label="รายชื่อสัตวแพทย์"
               collapsed={collapsed}
               isSubItem
-              theme={menuThemes.veterinary}
             />
           </MenuItem>
 
@@ -295,9 +242,9 @@ export default function CmuvcPage() {
             active={activeMenu === "events"}
             onClick={() => setActiveMenu("events")}
             icon={CalendarDays}
-            label="Events"
+            label="การเข้าร่วมกิจกรรม"
+            subLabel="Events"
             collapsed={collapsed}
-            theme={menuThemes.events}
           />
 
           {/* Settings */}
@@ -305,9 +252,9 @@ export default function CmuvcPage() {
             active={activeMenu === "settings"}
             onClick={() => setActiveMenu("settings")}
             icon={Settings}
-            label="Settings"
+            label="ตั้งค่า"
+            subLabel="Settings"
             collapsed={collapsed}
-            theme={menuThemes.settings}
           />
         </nav>
 
@@ -329,7 +276,7 @@ export default function CmuvcPage() {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-2 overflow-auto">
+      <main className="flex-1 overflow-auto bg-[#f4f6f4] p-3 sm:p-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeMenu}
@@ -344,7 +291,7 @@ export default function CmuvcPage() {
               y: -8,
               transition: { duration: 0.15, ease: [0.4, 0, 1, 1] },
             }}
-            className="bg-white p-4"
+            className="min-h-full"
             style={{
               willChange: "opacity, transform",
               backfaceVisibility: "hidden",
@@ -373,6 +320,7 @@ interface MenuItemProps {
   active?: boolean;
   icon: React.ElementType;
   label: string;
+  subLabel?: string;
   onClick?: () => void;
   collapsed?: boolean;
   isDropdown?: boolean;
@@ -380,25 +328,13 @@ interface MenuItemProps {
   toggleDropdown?: () => void;
   children?: React.ReactNode;
   isSubItem?: boolean;
-  theme?: {
-    accent: string;
-    text: string;
-    active: string;
-    ring: string;
-  };
 }
-
-const defaultTheme = {
-  accent: "bg-gray-400",
-  text: "text-gray-600",
-  active: "bg-gray-100 text-gray-800",
-  ring: "ring-gray-200",
-};
 
 const MenuItem: React.FC<MenuItemProps> = ({
   active = false,
   icon: Icon,
   label,
+  subLabel,
   onClick,
   collapsed = false,
   isDropdown = false,
@@ -406,10 +342,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
   toggleDropdown,
   children,
   isSubItem = false,
-  theme,
 }) => {
-  const currentTheme = theme || defaultTheme;
-
   return (
     <div>
       <motion.button
@@ -421,7 +354,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
           isSubItem ? "pl-8 pr-2.5 py-2 text-[13px]" : "px-2.5 py-2.5"
         } ${
           active
-            ? `${currentTheme.active} font-medium`
+            ? `${menuTheme.active} font-medium`
             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         } ${collapsed ? "justify-center px-0" : ""} relative group`}
       >
@@ -429,7 +362,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
         {active && !collapsed && (
           <motion.span
             layoutId={isSubItem ? undefined : "activeIndicator"}
-            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full ${currentTheme.accent}`}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full ${menuTheme.accent}`}
             transition={{ type: "spring", stiffness: 500, damping: 40 }}
           />
         )}
@@ -438,13 +371,20 @@ const MenuItem: React.FC<MenuItemProps> = ({
         <Icon
           className={`shrink-0 ${
             isSubItem ? "w-4 h-4" : "w-[18px] h-[18px]"
-          } ${active ? currentTheme.text : "text-gray-400 group-hover:text-gray-500"}`}
+          } ${active ? menuTheme.text : "text-gray-400 group-hover:text-gray-500"}`}
           strokeWidth={2}
         />
 
         {!collapsed && (
-          <span className="flex-1 flex items-center justify-between min-w-0">
-            <span className="truncate">{label}</span>
+          <span className="flex-1 flex items-center justify-between min-w-0 gap-2">
+            <span className="min-w-0">
+              <span className="block truncate leading-snug">{label}</span>
+              {subLabel && (
+                <span className="block truncate text-[11px] font-normal leading-snug text-gray-400">
+                  {subLabel}
+                </span>
+              )}
+            </span>
 
             {isDropdown && (
               <motion.span
